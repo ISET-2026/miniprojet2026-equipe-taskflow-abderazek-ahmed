@@ -3,11 +3,10 @@
 namespace App\Service;
 
 use App\Entity\Projet;
-use App\Repository\TacheRepository;
 
 class ProjetStatsCalculator
 {
-    public function __construct(private TacheRepository $tacheRepository)
+    public function __construct()
     {
     }
 
@@ -50,17 +49,17 @@ class ProjetStatsCalculator
 
     public function isOverdue(Projet $projet): bool
     {
-        $now = new \DateTimeImmutable();
+        $today = (new \DateTimeImmutable())->setTime(0, 0, 0);
         $dateLimite = $projet->getDateLimite();
 
         if (!$dateLimite) {
             return false;
         }
 
-        // Check if there are incomplete tasks
+        // Overdue only if deadline is passed and at least one task is not completed.
         foreach ($projet->getTaches() as $tache) {
             if ($tache->getStatut() !== 'terminee') {
-                return $dateLimite < $now;
+                return $dateLimite < $today;
             }
         }
 
@@ -72,11 +71,11 @@ class ProjetStatsCalculator
         $dateLimite = $projet->getDateLimite();
 
         if (!$dateLimite) {
-            return PHP_INT_MAX;
+            return 0;
         }
 
-        $now = new \DateTimeImmutable();
-        $interval = $now->diff($dateLimite);
+        $today = (new \DateTimeImmutable())->setTime(0, 0, 0);
+        $interval = $today->diff($dateLimite);
 
         return (int) $interval->format('%r%a');
     }

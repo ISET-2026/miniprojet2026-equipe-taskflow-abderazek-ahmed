@@ -6,6 +6,8 @@ import './stimulus_bootstrap.js';
  * which should already be in your base.html.twig.
  */
 import './styles/app.css';
+import './styles/tailone-1.0.0/tailone-1.0.0/dist/css/style.css';
+import './styles/tailone-1.0.0/tailone-1.0.0/dist/js/scripts.js';
 
 // Import SweetAlert2
 import 'sweetalert2';

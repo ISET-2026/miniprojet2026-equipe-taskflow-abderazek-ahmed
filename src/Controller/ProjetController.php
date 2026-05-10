@@ -29,6 +29,44 @@ class ProjetController extends AbstractController
     ) {
     }
 
+    /**
+     * @param Projet[] $projects
+     */
+    private function buildDashboardStats(array $projects): array
+    {
+        $totalProjects = count($projects);
+        $projectsInProgress = 0;
+        $projectsDone = 0;
+        $totalTasks = 0;
+        $doneTasks = 0;
+
+        foreach ($projects as $project) {
+            if ($project->getStatut() === 'en_cours') {
+                $projectsInProgress++;
+            }
+            if ($project->getStatut() === 'termine') {
+                $projectsDone++;
+            }
+
+            foreach ($project->getTaches() as $task) {
+                $totalTasks++;
+                if ($task->getStatut() === 'terminee') {
+                    $doneTasks++;
+                }
+            }
+        }
+
+        $averageProgress = $totalTasks > 0 ? (int) round(($doneTasks / $totalTasks) * 100) : 0;
+
+        return [
+            'totalProjects' => $totalProjects,
+            'projectsInProgress' => $projectsInProgress,
+            'projectsDone' => $projectsDone,
+            'totalTasks' => $totalTasks,
+            'averageProgress' => $averageProgress,
+        ];
+    }
+
     private function isProjetOwnerOrAdmin(Projet $projet): bool
     {
         if ($this->isGranted('ROLE_ADMIN')) {
@@ -115,6 +153,7 @@ class ProjetController extends AbstractController
             'users' => $users,
             'etiquettes' => $etiquettes,
             'recents' => $recents,
+            'dashboardStats' => $this->buildDashboardStats($projects),
         ]);
     }
 

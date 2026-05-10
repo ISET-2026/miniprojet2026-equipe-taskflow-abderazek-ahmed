@@ -3,85 +3,77 @@
 {% block title %}Nouvelle Tâche - TaskFlow{% endblock %}
 
 {% block body %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title mb-4">
-                    <i class="bi bi-plus-circle-fill"></i> Créer une nouvelle tâche
-                    <br><small class="fs-6 text-muted">Projet: {{ projet.nom }}</small>
-                </h2>
-
-                {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
-                    <div class="mb-3">
-                        {{ form_label(form.titre) }}
-                        {{ form_widget(form.titre, {'attr': {'class': 'form-control'}}) }}
-                        {{ form_errors(form.titre) }}
-                    </div>
-
-                    <div class="mb-3">
-                        {{ form_label(form.description) }}
-                        {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 4}}) }}
-                        {{ form_errors(form.description) }}
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                {{ form_label(form.priorite) }}
-                                {{ form_widget(form.priorite, {'attr': {'class': 'form-select'}}) }}
-                                {{ form_errors(form.priorite) }}
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                {{ form_label(form.statut) }}
-                                {{ form_widget(form.statut, {'attr': {'class': 'form-select'}}) }}
-                                {{ form_errors(form.statut) }}
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                {{ form_label(form.dateEcheance) }}
-                                {{ form_widget(form.dateEcheance, {'attr': {'class': 'form-control'}}) }}
-                                {{ form_errors(form.dateEcheance) }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        {{ form_label(form.assigneA) }}
-                        {% if not can_assign_tasks %}
-                            <p class="form-text text-muted mb-1">Seul le propriétaire du projet peut assigner une tâche à un utilisateur.</p>
-                        {% endif %}
-                        {{ form_widget(form.assigneA, {'attr': {'class': 'form-select'}}) }}
-                        {{ form_errors(form.assigneA) }}
-                    </div>
-
-                    <div class="mb-3">
-                        <label>{{ form_label(form.etiquettes) }}</label>
-                        {{ form_widget(form.etiquettes) }}
-                        {{ form_errors(form.etiquettes) }}
-                    </div>
-
-                    <div class="mb-3">
-                        {{ form_label(form.pieceJointe) }}
-                        {{ form_widget(form.pieceJointe, {'attr': {'class': 'form-control'}}) }}
-                        {{ form_errors(form.pieceJointe) }}
-                        <small class="form-text text-muted">Formats acceptés : PDF, DOC, DOCX, images, texte (max 5 Mo)</small>
-                    </div>
-
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ path('projet_show', {id: projet.id}) }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left"></i> Annuler
-                        </a>
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check-circle"></i> Créer la tâche
-                        </button>
-                    </div>
-                {{ form_end(form) }}
-            </div>
+<div class="grid min-h-[calc(100vh-7rem)] place-items-center py-10">
+    <div class="w-full max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-2xl">
+        <div class="mb-6">
+            <h2 class="text-3xl font-bold text-slate-900 mb-2"><i class="bi bi-plus-circle-fill text-blue-600 mr-2"></i> Créer une nouvelle tâche</h2>
+            <p class="text-slate-500">Projet : <strong>{{ projet.nom }}</strong></p>
         </div>
+
+        {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
+            <div class="space-y-5">
+                <div>
+                    {{ form_label(form.titre, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                    {{ form_widget(form.titre, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100'}}) }}
+                    {{ form_errors(form.titre) }}
+                </div>
+
+                <div>
+                    {{ form_label(form.description, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                    {{ form_widget(form.description, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100', 'rows': 4}}) }}
+                    {{ form_errors(form.description) }}
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div>
+                        {{ form_label(form.priorite, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                        {{ form_widget(form.priorite, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100'}}) }}
+                        {{ form_errors(form.priorite) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.statut, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                        {{ form_widget(form.statut, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100'}}) }}
+                        {{ form_errors(form.statut) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.dateEcheance, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                        {{ form_widget(form.dateEcheance, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100'}}) }}
+                        {{ form_errors(form.dateEcheance) }}
+                    </div>
+                </div>
+
+                <div>
+                    {{ form_label(form.assigneA, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                    {% if not can_assign_tasks %}
+                        <p class="mt-2 text-sm text-slate-500">Seul le propriétaire du projet peut assigner une tâche à un utilisateur.</p>
+                    {% endif %}
+                    {{ form_widget(form.assigneA, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100'}}) }}
+                    {{ form_errors(form.assigneA) }}
+                </div>
+
+                <div>
+                    {{ form_label(form.etiquettes, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                    {{ form_widget(form.etiquettes, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100'}}) }}
+                    {{ form_errors(form.etiquettes) }}
+                </div>
+
+                <div>
+                    {{ form_label(form.pieceJointe, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                    {{ form_widget(form.pieceJointe, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900'}}) }}
+                    {{ form_errors(form.pieceJointe) }}
+                    <p class="mt-2 text-sm text-slate-500">Formats acceptés : PDF, DOC, DOCX, images, texte (max 5 Mo)</p>
+                </div>
+
+                <div class="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                    <a href="{{ path('projet_show', {id: projet.id}) }}" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                        <i class="bi bi-arrow-left mr-2"></i> Annuler
+                    </a>
+                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600">
+                        <i class="bi bi-check-circle mr-2"></i> Créer la tâche
+                    </button>
+                </div>
+            </div>
+        {{ form_end(form) }}
     </div>
 </div>
 {% endblock %}

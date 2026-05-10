@@ -73,7 +73,7 @@ class Tache
     #[ORM\JoinTable(name: 'tache_etiquette')]
     #[ORM\JoinColumn(name: 'tache_id', referencedColumnName: 'id')]
     #[ORM\InverseJoinColumn(name: 'etiquette_id', referencedColumnName: 'id')]
-    #[Groups(['tache:read'])]
+    #[Groups(['tache:read', 'tache:write'])]
     private Collection $etiquettes;
 
     public function __construct()

@@ -2,28 +2,211 @@
 
 {% block title %}Liste des Projets - TaskFlow{% endblock %}
 
-{% block body %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="bi bi-folder"></i> Projets</h1>
-    {% if is_granted('ROLE_CHEF_PROJET') %}
-    <a href="{{ path('projet_new') }}" class="btn btn-success">
-        <i class="bi bi-plus-circle"></i> Nouveau projet
-    </a>
-    {% endif %}
-</div>
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .project-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .project-title {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .project-subtitle {
+            margin-top: .35rem;
+            color: #64748b;
+            font-size: .95rem;
+        }
+        .new-project-btn {
+            background: #2563eb;
+            color: #fff;
+            border-radius: 999px;
+            padding: .7rem 1rem;
+            font-size: .9rem;
+            font-weight: 600;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: .8rem;
+        }
+        .dashboard-card {
+            border: 1px solid #e2e8f0;
+            border-radius: .75rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            padding: .85rem .95rem;
+        }
+        .dashboard-label {
+            font-size: .76rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+        .dashboard-value {
+            margin-top: .35rem;
+            font-size: 1.35rem;
+            color: #0f172a;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .search-card {
+            padding: 1.25rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+        }
+        .search-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #0f172a;
+        }
+        .search-grid {
+            display: grid;
+            gap: .9rem;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+        }
+        .search-field {
+            display: flex;
+            flex-direction: column;
+            gap: .35rem;
+        }
+        .search-field label {
+            font-size: .84rem;
+            font-weight: 600;
+            color: #475569;
+        }
+        .search-name { grid-column: span 3 / span 3; }
+        .search-status { grid-column: span 2 / span 2; }
+        .search-owner { grid-column: span 3 / span 3; }
+        .search-tag { grid-column: span 2 / span 2; }
+        .search-actions { grid-column: span 2 / span 2; display: flex; align-items: flex-end; gap: .5rem; }
+        .filter-btn, .reset-btn {
+            flex: 1;
+            border-radius: 999px;
+            padding: .72rem .9rem;
+            font-size: .85rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .filter-btn { background: #0f172a; color: #fff; }
+        .reset-btn { background: #e2e8f0; color: #1e293b; }
+        .project-table-wrap { overflow: auto; }
+        .project-table-wrap table tbody tr:hover {
+            background: #f8fafc;
+        }
+        .project-name { font-weight: 700; color: #0f172a; }
+        .project-desc { color: #64748b; font-size: .83rem; margin-top: .25rem; }
+        .status-pill { border-radius: 999px; padding: .25rem .65rem; font-size: .72rem; font-weight: 700; }
+        .action-btn {
+            width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 999px; border: 1px solid #dbe1ea; background: #fff; color: #334155;
+        }
+        .action-btn-delete {
+            border-color: #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        .recents-card {
+            padding: 1.25rem;
+        }
+        .recents-grid {
+            display: grid;
+            gap: .75rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .recent-item {
+            border: 1px solid #e2e8f0;
+            border-radius: .75rem;
+            padding: .85rem .95rem;
+            background: #f8fafc;
+        }
+        .recent-item:hover {
+            border-color: #93c5fd;
+            background: #ffffff;
+        }
+        .recent-title {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: .9rem;
+        }
+        .recent-meta {
+            margin-top: .25rem;
+            font-size: .78rem;
+            color: #64748b;
+        }
+        .recent-count {
+            display: inline-flex;
+            margin-top: .55rem;
+            border-radius: 999px;
+            padding: .2rem .55rem;
+            background: #e2e8f0;
+            font-size: .72rem;
+            font-weight: 700;
+            color: #334155;
+        }
+        @media (max-width: 1024px) {
+            .search-name, .search-status, .search-owner, .search-tag, .search-actions { grid-column: span 12 / span 12; }
+            .recents-grid { grid-template-columns: 1fr; }
+            .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+    </style>
+{% endblock %}
 
-<!-- Search Filter -->
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title"><i class="bi bi-search"></i> Rechercher</h5>
-        <form method="get" action="{{ path('projet_index') }}" class="row g-3">
-            <div class="col-lg-3 col-md-6">
-                <label class="form-label small text-muted mb-0">Nom</label>
-                <input type="text" name="nom" class="form-control" placeholder="Nom du projet" value="{{ app.request.query.get('nom') }}">
+{% block body %}
+<div class="flex flex-col gap-6">
+    <div class="project-toolbar">
+        <div>
+            <h1 class="project-title"><i class="bi bi-folder text-blue-600 mr-2"></i> Projets</h1>
+            <p class="project-subtitle">Suivez vos projets et repérez l'avancement en un coup d'œil.</p>
+        </div>
+        {% if is_granted('ROLE_CHEF_PROJET') %}
+            <a href="{{ path('projet_new') }}" class="inline-flex items-center justify-center new-project-btn">
+                <i class="bi bi-plus-circle mr-2"></i> Nouveau projet
+            </a>
+        {% endif %}
+    </div>
+
+    <section>
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <div class="dashboard-label">Projets total</div>
+                <div class="dashboard-value">{{ dashboardStats.totalProjects }}</div>
             </div>
-            <div class="col-lg-2 col-md-6">
-                <label class="form-label small text-muted mb-0">Statut</label>
-                <select name="statut" class="form-select">
+            <div class="dashboard-card">
+                <div class="dashboard-label">Projets en cours</div>
+                <div class="dashboard-value">{{ dashboardStats.projectsInProgress }}</div>
+            </div>
+            <div class="dashboard-card">
+                <div class="dashboard-label">Projets terminés</div>
+                <div class="dashboard-value">{{ dashboardStats.projectsDone }}</div>
+            </div>
+            <div class="dashboard-card">
+                <div class="dashboard-label">Tâches total</div>
+                <div class="dashboard-value">{{ dashboardStats.totalTasks }}</div>
+            </div>
+            <div class="dashboard-card">
+                <div class="dashboard-label">Progression moyenne</div>
+                <div class="dashboard-value">{{ dashboardStats.averageProgress }}%</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="search-card">
+        <h2 class="search-title"><i class="bi bi-search text-blue-600 mr-2"></i> Recherche avancée</h2>
+        <form method="get" action="{{ path('projet_index') }}" class="search-grid">
+            <div class="search-field search-name">
+                <label>Nom</label>
+                <input type="text" name="nom" placeholder="Nom du projet" value="{{ app.request.query.get('nom') }}">
+            </div>
+            <div class="search-field search-status">
+                <label>Statut</label>
+                <select name="statut">
                     <option value="">Tous les statuts</option>
                     <option value="planifie" {{ app.request.query.get('statut') == 'planifie' ? 'selected' : '' }}>Planifié</option>
                     <option value="en_cours" {{ app.request.query.get('statut') == 'en_cours' ? 'selected' : '' }}>En cours</option>
@@ -31,128 +214,126 @@
                     <option value="annule" {{ app.request.query.get('statut') == 'annule' ? 'selected' : '' }}>Annulé</option>
                 </select>
             </div>
-            <div class="col-lg-3 col-md-6">
-                <label class="form-label small text-muted mb-0">Créateur</label>
-                <select name="createur" class="form-select">
+            <div class="search-field search-owner">
+                <label>Créateur</label>
+                <select name="createur">
                     <option value="">Tous les créateurs</option>
                     {% for u in users %}
                         <option value="{{ u.id }}" {{ app.request.query.get('createur') == u.id ? 'selected' : '' }}>{{ u.pseudo }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-lg-2 col-md-6">
-                <label class="form-label small text-muted mb-0">Étiquette</label>
-                <select name="etiquette" class="form-select">
+            <div class="search-field search-tag">
+                <label>Étiquette</label>
+                <select name="etiquette">
                     <option value="">Toutes les étiquettes</option>
                     {% for etiquette in etiquettes %}
-                        <option value="{{ etiquette.id }}" {{ app.request.query.get('etiquette') == etiquette.id ? 'selected' : '' }}>
-                            {{ etiquette.nom }}
-                        </option>
+                        <option value="{{ etiquette.id }}" {{ app.request.query.get('etiquette') == etiquette.id ? 'selected' : '' }}>{{ etiquette.nom }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-lg-2 col-md-12 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-filter"></i> Filtrer
+            <div class="search-actions">
+                <button type="submit" class="filter-btn">
+                    <i class="bi bi-filter mr-2"></i> Filtrer
                 </button>
+                <a href="{{ path('projet_index') }}" class="reset-btn">
+                    Réinitialiser
+                </a>
             </div>
         </form>
-    </div>
-</div>
+    </section>
 
-<!-- Projects Table -->
-<div class="table-responsive">
-    <table class="table table-hover">
-        <thead class="table-light">
-            <tr>
-                <th>Image</th>
-                <th>Nom</th>
-                <th>Statut</th>
-                <th>Tâches</th>
-                <th>Créateur</th>
-                <th>Date limite</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for projet in projets %}
+    <section class="project-table-wrap">
+        <table class="min-w-full">
+            <thead class="bg-slate-50">
                 <tr>
-                    <td>
-                        {% if projet.imageName %}
-                            <img src="{{ asset('images/projets/' ~ projet.imageName) }}" alt="{{ projet.nom }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
-                        {% else %}
-                            <i class="bi bi-folder2 text-secondary" style="font-size: 2rem;"></i>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <strong>{{ projet.nom }}</strong>
-                        <br><small class="text-muted">{{ projet.description|slice(0, 50) }}{% if projet.description|length > 50 %}...{% endif %}</small>
-                    </td>
-                    <td>
-                        <span class="badge badge-{{ projet.statut }}">
-                            {% if projet.statut == 'planifie' %}
-                                🔵 Planifié
-                            {% elseif projet.statut == 'en_cours' %}
-                                🟡 En cours
-                            {% elseif projet.statut == 'termine' %}
-                                🟢 Terminé
-                            {% elseif projet.statut == 'annule' %}
-                                🔴 Annulé
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Image</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Nom</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Statut</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Tâches</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Créateur</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Date limite</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 bg-white">
+                {% for projet in projets %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-4 align-middle">
+                            {% if projet.imageName %}
+                                <img src="{{ asset('images/projets/' ~ projet.imageName) }}" alt="{{ projet.nom }}" class="h-12 w-12 rounded object-cover">
+                            {% else %}
+                                <div class="flex h-12 w-12 items-center justify-center rounded bg-slate-100 text-slate-500">
+                                    <i class="bi bi-folder2 text-xl"></i>
+                                </div>
                             {% endif %}
-                        </span>
-                    </td>
-                    <td>
-                        {% set total = projet.taches|length %}
-                        {% set completed = projet.taches|filter(t => t.statut == 'terminee')|length %}
-                        <div class="progress" style="width: 100px;">
-                            <div class="progress-bar bg-success" style="width: {{ total > 0 ? (completed / total * 100)|round : 0 }}%"></div>
-                        </div>
-                        <small>{{ completed }}/{{ total }}</small>
-                    </td>
-                    <td>{{ projet.createur.pseudo }}</td>
-                    <td>{{ projet.dateLimite|date('d/m/Y') }}</td>
-                    <td>
-                        <a href="{{ path('projet_show', {id: projet.id}) }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        {% if is_granted('ROLE_ADMIN') or (app.user and projet.createur and projet.createur.id == app.user.id) %}
-                        <a href="{{ path('projet_edit', {id: projet.id}) }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <form method="post" action="{{ path('projet_delete', {id: projet.id}) }}" style="display: inline;" data-confirm data-confirm-message="Supprimer ce projet ?">
-                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ projet.id) }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                        {% endif %}
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
-                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                        <p class="mt-2">Aucun projet trouvé.</p>
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+                        </td>
+                        <td class="px-4 py-4 align-middle">
+                            <div class="project-name">{{ projet.nom }}</div>
+                            <div class="project-desc">{{ projet.description|slice(0, 50) }}{% if projet.description|length > 50 %}...{% endif %}</div>
+                        </td>
+                        <td class="px-4 py-4 align-middle">
+                            {% set statutClass = projet.statut == 'planifie' ? 'bg-blue-500 text-white' : projet.statut == 'en_cours' ? 'bg-yellow-300 text-slate-900' : projet.statut == 'termine' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white' %}
+                            <span class="status-pill {{ statutClass }}">
+                                {% if projet.statut == 'planifie' %}Planifié{% elseif projet.statut == 'en_cours' %}En cours{% elseif projet.statut == 'termine' %}Terminé{% elseif projet.statut == 'annule' %}Annulé{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 align-middle">
+                            {% set total = projet.taches|length %}
+                            {% set completed = projet.taches|filter(t => t.statut == 'terminee')|length %}
+                            <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                                <div class="h-full rounded-full bg-emerald-500" style="width: {{ total > 0 ? (completed / total * 100)|round : 0 }}%"></div>
+                            </div>
+                            <div class="mt-1 text-xs text-slate-500">{{ completed }}/{{ total }}</div>
+                        </td>
+                        <td class="px-4 py-4 align-middle text-slate-700">{{ projet.createur.pseudo }}</td>
+                        <td class="px-4 py-4 align-middle text-slate-700">{{ projet.dateLimite|date('d/m/Y') }}</td>
+                        <td class="px-4 py-4 align-middle text-right">
+                            <div class="flex flex-wrap justify-end gap-2">
+                                <a href="{{ path('projet_show', {id: projet.id}) }}" class="action-btn" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if is_granted('ROLE_ADMIN') or (app.user and projet.createur and projet.createur.id == app.user.id) %}
+                                    <a href="{{ path('projet_edit', {id: projet.id}) }}" class="action-btn" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form method="post" action="{{ path('projet_delete', {id: projet.id}) }}" class="inline" data-confirm data-confirm-message="Supprimer ce projet ?">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ projet.id) }}">
+                                        <button type="submit" class="action-btn action-btn-delete" title="Supprimer">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-12 text-center text-slate-500">
+                            <div class="flex flex-col items-center justify-center gap-3">
+                                <i class="bi bi-inbox text-4xl"></i>
+                                <p class="text-sm">Aucun projet trouvé.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
 
-<!-- Sidebar - Recent Projects (session, y compris visiteurs non connectés) -->
-{% if recents is defined and recents|length > 0 %}
-<div class="sidebar">
-    <h5>📋 Derniers projets consultés</h5>
-    <ul class="list-group mb-3">
-        {% for projet in recents %}
-            <li class="list-group-item">
-                <a href="{{ path('projet_show', {id: projet.id}) }}">
-                    {{ projet.nom }}
-                </a>
-            </li>
-        {% endfor %}
-    </ul>
+    {% if recents is defined and recents|length > 0 %}
+        <section class="recents-card">
+            <h2 class="text-lg font-semibold text-slate-900 mb-4"><i class="bi bi-clock-history text-blue-600 mr-2"></i> Derniers projets consultés</h2>
+            <div class="recents-grid">
+                {% for projet in recents %}
+                    <a href="{{ path('projet_show', {id: projet.id}) }}" class="recent-item transition">
+                        <div class="recent-title">{{ projet.nom }}</div>
+                        <div class="recent-meta">Date limite: {{ projet.dateLimite|date('d/m/Y') }}</div>
+                        <span class="recent-count">{{ projet.taches|length }} tâche(s)</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
 </div>
-{% endif %}
 {% endblock %}

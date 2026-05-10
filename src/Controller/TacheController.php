@@ -8,6 +8,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Entity\Projet;
@@ -15,6 +17,26 @@ use App\Entity\User;
 
 class TacheController extends AbstractController
 {
+    private function sendAssignmentNotification(MailerInterface $mailer, User $assignee, Tache $tache): void
+    {
+        $email = (new Email())
+            ->from('no-reply@taskflow.local')
+            ->to($assignee->getEmail())
+            ->subject('TaskFlow - Nouvelle assignation de tâche')
+            ->text(sprintf(
+                "Bonjour %s,\n\nVous avez été assigné à la tâche \"%s\" dans le projet \"%s\".\n\nConnectez-vous pour consulter les détails.\n",
+                $assignee->getPseudo(),
+                $tache->getTitre(),
+                $tache->getProjet()?->getNom()
+            ));
+
+        try {
+            $mailer->send($email);
+        } catch (\Throwable) {
+            // Do not block business flow if mail transport is not configured.
+        }
+    }
+
     private function canManageTache(Tache $tache): bool
     {
         $user = $this->getUser();
@@ -49,11 +71,12 @@ class TacheController extends AbstractController
     }
 
     #[Route('/projets/{id}/taches/nouvelle', name: 'tache_new', methods: ['GET', 'POST'])]
-    #[IsGranted('ROLE_CHEF_PROJET')]
+    #[IsGranted('ROLE_USER')]
     public function new(
         Request $request,
         Projet $projet,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        MailerInterface $mailer
     ): Response {
         $tache = new Tache();
         $tache->setProjet($projet);
@@ -83,6 +106,10 @@ class TacheController extends AbstractController
             $em->persist($tache);
             $em->flush();
 
+            if ($tache->getAssigneA() instanceof User) {
+                $this->sendAssignmentNotification($mailer, $tache->getAssigneA(), $tache);
+            }
+
             $this->addFlash('success', 'La tâche a été créée avec succès.');
 
             return $this->redirectToRoute('projet_show', ['id' => $projet->getId()]);
@@ -100,7 +127,8 @@ class TacheController extends AbstractController
     public function edit(
         Request $request,
         Tache $tache,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        MailerInterface $mailer
     ): Response {
         if (!$this->canManageTache($tache)) {
             $this->addFlash('error', 'Vous n\'avez pas les droits pour modifier cette tâche.');
@@ -139,6 +167,10 @@ class TacheController extends AbstractController
             }
 
             $em->flush();
+
+            if ($tache->getAssigneA() instanceof User && $tache->getAssigneA() !== $assigneAvantModification) {
+                $this->sendAssignmentNotification($mailer, $tache->getAssigneA(), $tache);
+            }
 
             $this->addFlash('success', 'La tâche a été modifiée avec succès.');
 

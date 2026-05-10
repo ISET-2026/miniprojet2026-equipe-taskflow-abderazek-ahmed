@@ -3,57 +3,57 @@
 {% block title %}Nouveau Projet - TaskFlow{% endblock %}
 
 {% block body %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title mb-4">
-                    <i class="bi bi-plus-circle-fill"></i> Créer un nouveau projet
-                </h2>
+<div class="grid min-h-[calc(100vh-7rem)] place-items-center py-10">
+    <div class="w-full max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-2xl">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-slate-900 mb-2"><i class="bi bi-plus-circle-fill text-blue-600 mr-2"></i> Créer un nouveau projet</h2>
+            <p class="text-slate-500">Ajoutez un projet et commencez à organiser votre équipe efficacement.</p>
+        </div>
 
-                {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
-                    <div class="mb-3">
-                        {{ form_label(form.nom) }}
-                        {{ form_widget(form.nom, {'attr': {'class': 'form-control'}}) }}
-                        {{ form_errors(form.nom) }}
-                    </div>
+        {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
+            <div class="space-y-5">
+                <div>
+                    {{ form_label(form.nom, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                    {{ form_widget(form.nom, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100'}}) }}
+                    {{ form_errors(form.nom) }}
+                </div>
 
-                    <div class="mb-3">
-                        {{ form_label(form.description) }}
-                        {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 4}}) }}
-                        {{ form_errors(form.description) }}
-                    </div>
+                <div>
+                    {{ form_label(form.description, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                    {{ form_widget(form.description, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100', 'rows': 4}}) }}
+                    {{ form_errors(form.description) }}
+                </div>
 
-                    <div class="mb-3">
-                        {{ form_label(form.dateLimite) }}
-                        {{ form_widget(form.dateLimite, {'attr': {'class': 'form-control'}}) }}
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        {{ form_label(form.dateLimite, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                        {{ form_widget(form.dateLimite, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100'}}) }}
                         {{ form_errors(form.dateLimite) }}
                     </div>
-
-                    <div class="mb-3">
-                        {{ form_label(form.statut) }}
-                        {{ form_widget(form.statut, {'attr': {'class': 'form-select'}}) }}
+                    <div>
+                        {{ form_label(form.statut, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                        {{ form_widget(form.statut, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100'}}) }}
                         {{ form_errors(form.statut) }}
                     </div>
+                </div>
 
-                    <div class="mb-3">
-                        {{ form_label(form.image) }}
-                        {{ form_widget(form.image, {'attr': {'class': 'form-control'}}) }}
-                        {{ form_errors(form.image) }}
-                        <small class="form-text text-muted">Formats acceptés : JPEG, PNG, WebP (max 2 Mo)</small>
-                    </div>
+                <div>
+                    {{ form_label(form.image, null, {'label_attr': {'class': 'block text-sm font-semibold text-slate-700'}}) }}
+                    {{ form_widget(form.image, {'attr': {'class': 'mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900'}}) }}
+                    {{ form_errors(form.image) }}
+                    <p class="mt-2 text-sm text-slate-500">Formats acceptés : JPEG, PNG, WebP (max 2 Mo)</p>
+                </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ path('projet_index') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left"></i> Retour
-                        </a>
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check-circle"></i> Créer le projet
-                        </button>
-                    </div>
-                {{ form_end(form) }}
+                <div class="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                    <a href="{{ path('projet_index') }}" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                        <i class="bi bi-arrow-left mr-2"></i> Retour
+                    </a>
+                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600">
+                        <i class="bi bi-check-circle mr-2"></i> Créer le projet
+                    </button>
+                </div>
             </div>
-        </div>
+        {{ form_end(form) }}
     </div>
 </div>
 {% endblock %}

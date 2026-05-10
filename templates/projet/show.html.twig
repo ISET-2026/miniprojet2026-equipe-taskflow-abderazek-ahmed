@@ -50,6 +50,11 @@
         .task-table th, .task-table td { padding: .7rem .65rem; border-bottom: 1px solid #e2e8f0; font-size: .85rem; }
         .task-table th { background: #f8fafc; color: #64748b; text-transform: uppercase; letter-spacing: .03em; font-size: .72rem; text-align: left; }
         .mini-chip { display: inline-flex; border-radius: 999px; padding: .18rem .5rem; font-size: .7rem; font-weight: 700; }
+        .priority-basse { background: #3b82f6; color: #fff; }
+        .priority-moyenne { background: #22c55e; color: #fff; }
+        .priority-haute { background: #f97316; color: #fff; }
+        .priority-urgente { background: #ef4444; color: #fff; }
+        .tag-chip { color: #fff; }
 
         .recents-list { display: grid; gap: .5rem; }
         .recent-link { border: 1px solid #e2e8f0; border-radius: .6rem; background: #f8fafc; padding: .65rem; color: #0f172a; text-decoration: none; }
@@ -184,8 +189,8 @@
                                     <tr>
                                         <td>{{ tache.titre }}</td>
                                         <td>
-                                            {% set priorityClass = tache.priorite == 'basse' ? 'background:#e0f2fe;color:#0c4a6e;' : tache.priorite == 'moyenne' ? 'background:#dcfce7;color:#166534;' : tache.priorite == 'haute' ? 'background:#ffedd5;color:#9a3412;' : 'background:#fee2e2;color:#b91c1c;' %}
-                                            <span class="mini-chip" style="{{ priorityClass }}">{{ tache.priorite|replace({'_':' '})|title }}</span>
+                                            {% set priorityClass = tache.priorite == 'basse' ? 'priority-basse' : tache.priorite == 'moyenne' ? 'priority-moyenne' : tache.priorite == 'haute' ? 'priority-haute' : 'priority-urgente' %}
+                                            <span class="mini-chip {{ priorityClass }}">{{ tache.priorite|replace({'_':' '})|title }}</span>
                                         </td>
                                         <td>
                                             {% if peut_gerer_tache %}
@@ -211,7 +216,7 @@
                                         <td>
                                             {% if tache.etiquettes|length > 0 %}
                                                 {% for etiquette in tache.etiquettes %}
-                                                    <span class="mini-chip" style="background-color: {{ etiquette.couleur }}; color: #fff;">{{ etiquette.nom }}</span>
+                                                    <span class="mini-chip tag-chip" style="background-color: {{ etiquette.couleur }};">{{ etiquette.nom }}</span>
                                                 {% endfor %}
                                             {% else %}
                                                 Aucune

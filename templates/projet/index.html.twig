@@ -103,6 +103,22 @@
         .project-name { font-weight: 700; color: #0f172a; }
         .project-desc { color: #64748b; font-size: .83rem; margin-top: .25rem; }
         .status-pill { border-radius: 999px; padding: .25rem .65rem; font-size: .72rem; font-weight: 700; }
+        .status-planifie { background: #3b82f6; color: #fff; }
+        .status-en-cours { background: #facc15; color: #1f2937; }
+        .status-termine { background: #22c55e; color: #fff; }
+        .status-annule { background: #ef4444; color: #fff; }
+        .task-count-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.2rem;
+            border-radius: 999px;
+            background: #e2e8f0;
+            color: #1e293b;
+            font-size: .75rem;
+            font-weight: 700;
+            padding: .2rem .55rem;
+        }
         .action-btn {
             width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
             border-radius: 999px; border: 1px solid #dbe1ea; background: #fff; color: #334155;
@@ -273,18 +289,13 @@
                             <div class="project-desc">{{ projet.description|slice(0, 50) }}{% if projet.description|length > 50 %}...{% endif %}</div>
                         </td>
                         <td class="px-4 py-4 align-middle">
-                            {% set statutClass = projet.statut == 'planifie' ? 'bg-blue-500 text-white' : projet.statut == 'en_cours' ? 'bg-yellow-300 text-slate-900' : projet.statut == 'termine' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white' %}
+                            {% set statutClass = projet.statut == 'planifie' ? 'status-planifie' : projet.statut == 'en_cours' ? 'status-en-cours' : projet.statut == 'termine' ? 'status-termine' : 'status-annule' %}
                             <span class="status-pill {{ statutClass }}">
                                 {% if projet.statut == 'planifie' %}Planifié{% elseif projet.statut == 'en_cours' %}En cours{% elseif projet.statut == 'termine' %}Terminé{% elseif projet.statut == 'annule' %}Annulé{% endif %}
                             </span>
                         </td>
                         <td class="px-4 py-4 align-middle">
-                            {% set total = projet.taches|length %}
-                            {% set completed = projet.taches|filter(t => t.statut == 'terminee')|length %}
-                            <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full bg-emerald-500" style="width: {{ total > 0 ? (completed / total * 100)|round : 0 }}%"></div>
-                            </div>
-                            <div class="mt-1 text-xs text-slate-500">{{ completed }}/{{ total }}</div>
+                            <span class="task-count-pill">{{ projet.taches|length }}</span>
                         </td>
                         <td class="px-4 py-4 align-middle text-slate-700">{{ projet.createur.pseudo }}</td>
                         <td class="px-4 py-4 align-middle text-slate-700">{{ projet.dateLimite|date('d/m/Y') }}</td>

@@ -1,0 +1,1 @@
+php bin/console app:create-admin-user admin123@gmail.com admin_password_user admin123

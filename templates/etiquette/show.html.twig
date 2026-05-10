@@ -1,0 +1,86 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ etiquette.nom }} - TaskFlow{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-tag"></i> {{ etiquette.nom }}
+    </h1>
+    <div>
+        <a href="{{ path('etiquette_edit', {id: etiquette.id}) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+        <form method="post" action="{{ path('etiquette_delete', {id: etiquette.id}) }}" style="display: inline;" data-confirm data-confirm-message="Supprimer cette étiquette ?">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ etiquette.id) }}">
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Informations</h5>
+                <div class="mb-3">
+                    <strong>Nom:</strong> {{ etiquette.nom }}
+                </div>
+                <div class="mb-3">
+                    <strong>Couleur:</strong>
+                    <span class="badge ms-2" style="background-color: {{ etiquette.couleur }}; color: #fff;">
+                        {{ etiquette.couleur }}
+                    </span>
+                </div>
+                <div class="mb-3">
+                    <strong>Utilisée par:</strong> {{ etiquette.taches|length }} tâche(s)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Aperçu</h5>
+                <div class="d-flex align-items-center">
+                    <span class="badge me-3" style="background-color: {{ etiquette.couleur }}; color: #fff; padding: 10px 20px;">
+                        {{ etiquette.nom }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if etiquette.taches|length > 0 %}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Tâches utilisant cette étiquette</h5>
+        <div class="list-group">
+            {% for tache in etiquette.taches %}
+                <a href="{{ path('projet_show', {id: tache.projet.id}) }}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ tache.titre }}</h6>
+                        <small>{{ tache.projet.nom }}</small>
+                    </div>
+                    <p class="mb-1">{{ tache.description|length > 100 ? tache.description|slice(0, 100) ~ '...' : tache.description }}</p>
+                    <small class="text-muted">
+                        Statut: {{ tache.statut|replace({'a_faire': 'À faire', 'en_cours': 'En cours', 'terminee': 'Terminée'}) }}
+                        | Priorité: {{ tache.priorite|replace({'basse': 'Basse', 'moyenne': 'Moyenne', 'haute': 'Haute', 'urgente': 'Urgente'}) }}
+                    </small>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{{ path('etiquette_index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Retour à la liste
+    </a>
+</div>
+{% endblock %}

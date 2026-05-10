@@ -1,0 +1,146 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des Projets - TaskFlow{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-folder"></i> Projets</h1>
+    {% if is_granted('ROLE_CHEF_PROJET') %}
+    <a href="{{ path('projet_new') }}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nouveau projet
+    </a>
+    {% endif %}
+</div>
+
+<!-- Search Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title"><i class="bi bi-search"></i> Rechercher</h5>
+        <form method="get" action="{{ path('projet_index') }}" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="nom" class="form-control" placeholder="Nom du projet" value="{{ app.request.query.get('nom') }}">
+            </div>
+            <div class="col-md-3">
+                <select name="statut" class="form-select">
+                    <option value="">Tous les statuts</option>
+                    <option value="planifie" {{ app.request.query.get('statut') == 'planifie' ? 'selected' : '' }}>Planifié</option>
+                    <option value="en_cours" {{ app.request.query.get('statut') == 'en_cours' ? 'selected' : '' }}>En cours</option>
+                    <option value="termine" {{ app.request.query.get('statut') == 'termine' ? 'selected' : '' }}>Terminé</option>
+                    <option value="annule" {{ app.request.query.get('statut') == 'annule' ? 'selected' : '' }}>Annulé</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="etiquette" class="form-select">
+                    <option value="">Toutes les étiquettes</option>
+                    {% for etiquette in etiquettes %}
+                        <option value="{{ etiquette.id }}" {{ app.request.query.get('etiquette') == etiquette.id ? 'selected' : '' }}>
+                            {{ etiquette.nom }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-filter"></i> Filtrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Projects Table -->
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Image</th>
+                <th>Nom</th>
+                <th>Statut</th>
+                <th>Tâches</th>
+                <th>Créateur</th>
+                <th>Date limite</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for projet in projets %}
+                <tr>
+                    <td>
+                        {% if projet.imageName %}
+                            <img src="{{ asset('images/projets/' ~ projet.imageName) }}" alt="{{ projet.nom }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                        {% else %}
+                            <i class="bi bi-folder2 text-secondary" style="font-size: 2rem;"></i>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ projet.nom }}</strong>
+                        <br><small class="text-muted">{{ projet.description|slice(0, 50) }}{% if projet.description|length > 50 %}...{% endif %}</small>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ projet.statut }}">
+                            {% if projet.statut == 'planifie' %}
+                                🔵 Planifié
+                            {% elseif projet.statut == 'en_cours' %}
+                                🟡 En cours
+                            {% elseif projet.statut == 'termine' %}
+                                🟢 Terminé
+                            {% elseif projet.statut == 'annule' %}
+                                🔴 Annulé
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% set total = projet.taches|length %}
+                        {% set completed = projet.taches|filter(t => t.statut == 'terminee')|length %}
+                        <div class="progress" style="width: 100px;">
+                            <div class="progress-bar bg-success" style="width: {{ total > 0 ? (completed / total * 100)|round : 0 }}%"></div>
+                        </div>
+                        <small>{{ completed }}/{{ total }}</small>
+                    </td>
+                    <td>{{ projet.createur.pseudo }}</td>
+                    <td>{{ projet.dateLimite|date('d/m/Y') }}</td>
+                    <td>
+                        <a href="{{ path('projet_show', {id: projet.id}) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        {% if projet.createur == app.user or is_granted('ROLE_ADMIN') %}
+                        <a href="{{ path('projet_edit', {id: projet.id}) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="post" action="{{ path('projet_delete', {id: projet.id}) }}" style="display: inline;" data-confirm data-confirm-message="Supprimer ce projet ?">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ projet.id) }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2">Aucun projet trouvé.</p>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Sidebar - Recent Projects -->
+{% if app.user and recents is defined and recents|length > 0 %}
+<div class="sidebar">
+    <h5><i class="bi bi-clock-history"></i> Derniers projets consultés</h5>
+    <ul class="list-group mb-3">
+        {% for projet in recents %}
+            <li class="list-group-item">
+                <a href="{{ path('projet_show', {id: projet.id}) }}">
+                    {{ projet.nom }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

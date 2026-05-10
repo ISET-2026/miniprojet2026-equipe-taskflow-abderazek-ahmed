@@ -1,0 +1,77 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle Tâche - TaskFlow{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">
+                    <i class="bi bi-plus-circle-fill"></i> Créer une nouvelle tâche
+                    <br><small class="fs-6 text-muted">Projet: {{ projet.nom }}</small>
+                </h2>
+
+                {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
+                    <div class="mb-3">
+                        {{ form_label(form.titre) }}
+                        {{ form_widget(form.titre, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.titre) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.description) }}
+                        {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 4}}) }}
+                        {{ form_errors(form.description) }}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form_label(form.priorite) }}
+                                {{ form_widget(form.priorite, {'attr': {'class': 'form-select'}}) }}
+                                {{ form_errors(form.priorite) }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form_label(form.dateEcheance) }}
+                                {{ form_widget(form.dateEcheance, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.dateEcheance) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.assigneA) }}
+                        {{ form_widget(form.assigneA, {'attr': {'class': 'form-select'}}) }}
+                        {{ form_errors(form.assigneA) }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label>{{ form_label(form.etiquettes) }}</label>
+                        {{ form_widget(form.etiquettes) }}
+                        {{ form_errors(form.etiquettes) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.pieceJointe) }}
+                        {{ form_widget(form.pieceJointe, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.pieceJointe) }}
+                        <small class="form-text text-muted">Formats acceptés : PDF, DOC, DOCX, images, texte (max 5 Mo)</small>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ path('projet_show', {id: projet.id}) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Créer la tâche
+                        </button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

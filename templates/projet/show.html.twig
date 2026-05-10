@@ -1,0 +1,256 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ projet.nom }} - TaskFlow{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-folder"></i> {{ projet.nom }}
+    </h1>
+    <div>
+        {% if projet.createur == app.user or is_granted('ROLE_ADMIN') %}
+        <a href="{{ path('projet_edit', {id: projet.id}) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+        <form method="post" action="{{ path('projet_delete', {id: projet.id}) }}" style="display: inline;" data-confirm data-confirm-message="Supprimer ce projet et toutes ses tâches ?">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ projet.id) }}">
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+        {% endif %}
+        {% if is_granted('ROLE_USER') %}
+        <a href="{{ path('tache_new', {id: projet.id}) }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Nouvelle tâche
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Project Info -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex">
+                    {% if projet.imageName %}
+                        <img src="{{ asset('images/projets/' ~ projet.imageName) }}" alt="{{ projet.nom }}" class="me-3" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
+                    {% else %}
+                        <div class="me-3 d-flex align-items-center justify-content-center bg-light rounded" style="width: 150px; height: 150px;">
+                            <i class="bi bi-folder-fill text-secondary" style="font-size: 3rem;"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h2 class="h4">{{ projet.nom }}</h2>
+                        <div class="mb-2">
+                            <span class="badge badge-{{ projet.statut }}">
+                                {% if projet.statut == 'planifie' %}
+                                    🔵 Planifié
+                                {% elseif projet.statut == 'en_cours' %}
+                                    🟡 En cours
+                                {% elseif projet.statut == 'termine' %}
+                                    🟢 Terminé
+                                {% elseif projet.statut == 'annule' %}
+                                    🔴 Annulé
+                                {% endif %}
+                            </span>
+                        </div>
+                        <p class="text-muted mb-1">
+                            <i class="bi bi-person"></i> Créé par <strong>{{ projet.createur.pseudo }}</strong>
+                        </p>
+                        <p class="text-muted mb-1">
+                            <i class="bi bi-calendar"></i> Créé le {{ projet.dateCreation|date('d/m/Y') }}
+                        </p>
+                        <p class="text-muted mb-1">
+                            <i class="bi bi-calendar-check"></i> Date limite : <strong>{{ projet.dateLimite|date('d/m/Y') }}</strong>
+                        </p>
+                        {% if stats and stats.isOverdue %}
+                            <div class="alert alert-warning py-1 mt-2">
+                                <i class="bi bi-exclamation-triangle"></i> Projet en retard ! ({{ stats.remainingDays }} jours restants)
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <hr>
+                <p>{{ projet.description|nl2br }}</p>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Progression du projet</h5>
+                {% set progress = stats is defined ? stats.progressPercentage : 0 %}
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar {{ progress == 100 ? 'bg-success' : 'bg-primary' }}" style="width: {{ progress }}%">
+                        {{ progress }}%
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-4 text-center">
+                        <strong>{{ stats is defined ? stats.taskCountByStatus.a_faire : 0 }}</strong><br>
+                        À faire
+                    </div>
+                    <div class="col-4 text-center">
+                        <strong>{{ stats is defined ? stats.taskCountByStatus.en_cours : 0 }}</strong><br>
+                        En cours
+                    </div>
+                    <div class="col-4 text-center">
+                        <strong>{{ stats is defined ? stats.taskCountByStatus.terminee : 0 }}</strong><br>
+                        Terminées
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks List -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Tâches</h5>
+                <span class="badge bg-secondary">{{ projet.taches|length }} tâche(s)</span>
+            </div>
+            <div class="card-body p-0">
+                {% if projet.taches|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Titre</th>
+                                    <th>Priorité</th>
+                                    <th>Statut</th>
+                                    <th>Assigné à</th>
+                                    <th>Étiquettes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tache in projet.taches %}
+                                    <tr>
+                                        <td>{{ tache.titre }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ tache.priorite }}">
+                                                {% if tache.priorite == 'basse' %}
+                                                    🔵 Basse
+                                                {% elseif tache.priorite == 'moyenne' %}
+                                                    🟢 Moyenne
+                                                {% elseif tache.priorite == 'haute' %}
+                                                    🟠 Haute
+                                                {% elseif tache.priorite == 'urgente' %}
+                                                    🔴 Urgente
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if tache.statut == 'a_faire' %}
+                                                <span class="badge bg-secondary">À faire</span>
+                                            {% elseif tache.statut == 'en_cours' %}
+                                                <span class="badge bg-primary">En cours</span>
+                                            {% elseif tache.statut == 'terminee' %}
+                                                <span class="badge bg-success">Terminée</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if tache.assigneA %}
+                                                <span class="badge bg-light text-dark">{{ tache.assigneA.pseudo }}</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% for etiquette in tache.etiquettes %}
+                                                <span class="badge" style="background-color: {{ etiquette.couleur }}; color: #fff;">
+                                                    {{ etiquette.nom }}
+                                                </span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ path('tache_edit', {id: tache.id}) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form method="post" action="{{ path('tache_delete', {id: tache.id}) }}" style="display: inline;" data-confirm data-confirm-message="Supprimer cette tâche ?">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ tache.id) }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2">Aucune tâche pour ce projet.</p>
+                        {% if is_granted('ROLE_USER') %}
+                            <a href="{{ path('tache_new', {id: projet.id}) }}" class="btn btn-success">
+                                <i class="bi bi-plus-circle"></i> Ajouter une tâche
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="sidebar">
+            <!-- Recent Projects -->
+            {% if app.user and recents is defined and recents|length > 0 %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-clock-history"></i> Derniers projets</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for recent in recents %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <a href="{{ path('projet_show', {id: recent.id}) }}" class="text-decoration-none">
+                                        {{ recent.nom|slice(0, 20) }}
+                                    </a>
+                                    <span class="badge bg-secondary rounded-pill">{{ recent.taches|length }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Project Statistics -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Statistiques</h6>
+                </div>
+                <div class="card-body">
+                    {% if stats is defined %}
+                        <div class="mb-3">
+                            <small class="text-muted">Progression</small>
+                            <h3 class="mb-0">{{ stats.progressPercentage }}%</h3>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Jours restants</small>
+                            <h3 class="mb-0 {{ stats.remainingDays < 0 ? 'text-danger' : 'text-success' }}">
+                                {{ stats.remainingDays < 0 ? stats.remainingDays ~ ' jours de retard' : stats.remainingDays ~ ' jours' }}
+                            </h3>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <strong>{{ stats.taskCountByStatus.a_faire }}</strong><br><small>À faire</small>
+                            </div>
+                            <div class="col-4">
+                                <strong>{{ stats.taskCountByStatus.en_cours }}</strong><br><small>En cours</small>
+                            </div>
+                            <div class="col-4">
+                                <strong>{{ stats.taskCountByStatus.terminee }}</strong><br><small>Terminées</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

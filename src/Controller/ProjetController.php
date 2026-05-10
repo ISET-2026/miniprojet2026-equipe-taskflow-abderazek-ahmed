@@ -3,13 +3,16 @@
 namespace App\Controller;
 
 use App\Entity\Projet;
+use App\Entity\User;
 use App\Form\ProjetType;
 use App\Repository\EtiquetteRepository;
 use App\Repository\ProjetRepository;
 use App\Repository\UserRepository;
+use App\Service\ProjetStatsCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -21,11 +24,32 @@ class ProjetController extends AbstractController
     private const RECENTS_LIMIT = 5;
     private const SESSION_KEY = 'recent_projects';
 
+    public function __construct(
+        private readonly ProjetStatsCalculator $projetStatsCalculator,
+    ) {
+    }
+
+    private function isProjetOwnerOrAdmin(Projet $projet): bool
+    {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return true;
+        }
+
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        $createur = $projet->getCreateur();
+
+        return $createur instanceof User && $createur->getId() === $user->getId();
+    }
+
     #[Route(name: 'projet_index', defaults: ['id' => null])]
     #[Route('/{id}', name: 'projet_show', requirements: ['id' => '\d+'])]
-    public function index(Request $request, ProjetRepository $projetRepository, UserRepository $userRepo, EtiquetteRepository $etiquetteRepo, ?Projet $projet = null): Response
+    public function index(Request $request, RequestStack $requestStack, ProjetRepository $projetRepository, UserRepository $userRepo, EtiquetteRepository $etiquetteRepo, ?Projet $projet = null): Response
     {
-        $session = $request->getSession();
+        $session = $requestStack->getSession();
 
         // If an id is provided, show project details
         if ($projet) {
@@ -39,14 +63,12 @@ class ProjetController extends AbstractController
             $recents = array_slice($recents, 0, self::RECENTS_LIMIT);
             $session->set(self::SESSION_KEY, $recents);
 
-            // Calculate stats
-            $tacheRepo = $projetRepository->getEntityManager()->getRepository(\App\Entity\Tache::class);
-            $statsCalculator = new \App\Service\ProjetStatsCalculator($tacheRepo);
+            // Calculate stats (service injecté par constructeur)
             $stats = [
-                'progressPercentage' => $statsCalculator->getProgressPercentage($projet),
-                'taskCountByStatus' => $statsCalculator->getTaskCountByStatus($projet),
-                'isOverdue' => $statsCalculator->isOverdue($projet),
-                'remainingDays' => $statsCalculator->getRemainingDays($projet),
+                'progressPercentage' => $this->projetStatsCalculator->getProgressPercentage($projet),
+                'taskCountByStatus' => $this->projetStatsCalculator->getTaskCountByStatus($projet),
+                'isOverdue' => $this->projetStatsCalculator->isOverdue($projet),
+                'remainingDays' => $this->projetStatsCalculator->getRemainingDays($projet),
             ];
 
             // Get recent projects for sidebar
@@ -105,12 +127,16 @@ class ProjetController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $projet->setCreateur($this->getUser());
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                throw $this->createAccessDeniedException();
+            }
+            $projet->setCreateur($user);
 
             $imageFile = $form->get('image')->getData();
             if ($imageFile) {
                 $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', null, $originalFilename);
+                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', $originalFilename);
                 $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
                 $imageFile->move($this->getParameter('images_directory'), $newFilename);
                 $projet->setImageName($newFilename);
@@ -133,7 +159,7 @@ class ProjetController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function edit(Request $request, Projet $projet, EntityManagerInterface $em): Response
     {
-        if ($projet->getCreateur() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+        if (!$this->isProjetOwnerOrAdmin($projet)) {
             $this->addFlash('error', 'Vous n\'avez pas les droits pour modifier ce projet.');
             return $this->redirectToRoute('projet_index');
         }
@@ -152,7 +178,7 @@ class ProjetController extends AbstractController
                 }
 
                 $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', null, $originalFilename);
+                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', $originalFilename);
                 $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
                 $imageFile->move($this->getParameter('images_directory'), $newFilename);
                 $projet->setImageName($newFilename);
@@ -180,7 +206,7 @@ class ProjetController extends AbstractController
             return $this->redirectToRoute('projet_index');
         }
 
-        if ($projet->getCreateur() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+        if (!$this->isProjetOwnerOrAdmin($projet)) {
             $this->addFlash('error', 'Vous n\'avez pas les droits pour supprimer ce projet.');
             return $this->redirectToRoute('projet_index');
         }

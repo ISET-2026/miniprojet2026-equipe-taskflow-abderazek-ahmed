@@ -12,9 +12,7 @@
                 </h3>
 
                 {% if error %}
-                    <div class="alert alert-danger">
-                        {{ error.messageKey|trans(error.messageData, 'security') }}
-                    </div>
+                    {# Erreur affichée via SweetAlert2 (bloc javascripts_after) #}
                 {% endif %}
 
                 <form method="post" action="{{ path('login') }}">
@@ -52,4 +50,17 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block javascripts_after %}
+    {% if error %}
+    <script type="module">
+        import Swal from 'sweetalert2';
+        Swal.fire({
+            icon: 'error',
+            title: 'Connexion impossible',
+            text: {{ error.messageKey|trans(error.messageData, 'security')|json_encode|raw }}
+        });
+    </script>
+    {% endif %}
 {% endblock %}

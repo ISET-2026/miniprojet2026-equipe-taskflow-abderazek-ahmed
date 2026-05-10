@@ -37,7 +37,9 @@ class RegistrationController extends AbstractController
                 $form->get('plainPassword')->getData()
             );
             $user->setPassword($hashedPassword);
-            $user->setRoles(['ROLE_CHEF_PROJET']);
+
+            $accountType = $form->get('accountType')->getData();
+            $user->setRoles('chef' === $accountType ? ['ROLE_CHEF_PROJET'] : []);
 
             try {
                 $entityManager->persist($user);

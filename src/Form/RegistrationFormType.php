@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\User;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
@@ -25,6 +26,23 @@ class RegistrationFormType extends AbstractType
             ->add('pseudo', TextType::class, [
                 'label' => 'Pseudo',
                 'attr' => ['placeholder' => 'Votre pseudo'],
+            ])
+            ->add('accountType', ChoiceType::class, [
+                'label' => false,
+                'mapped' => false,
+                'expanded' => true,
+                'multiple' => false,
+                'choices' => [
+                    'Utilisateur normal' => 'user',
+                    'Chef de projet' => 'chef',
+                ],
+                'data' => 'user',
+                'constraints' => [
+                    new NotBlank(message: 'Veuillez choisir un type de compte.'),
+                ],
+                'choice_attr' => static fn () => ['class' => 'form-check-input'],
+                'label_attr' => ['class' => 'form-check-label'],
+                'row_attr' => ['class' => 'mb-3'],
             ])
             ->add('plainPassword', RepeatedType::class, [
                 'type' => PasswordType::class,

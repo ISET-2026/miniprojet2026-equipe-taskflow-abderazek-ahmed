@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\Tache;
 use App\Form\TacheType;
-use App\Repository\TacheRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,11 +11,45 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Entity\Projet;
+use App\Entity\User;
 
-#[IsGranted('ROLE_USER')]
 class TacheController extends AbstractController
 {
+    private function canManageTache(Tache $tache): bool
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return true;
+        }
+
+        $createur = $tache->getProjet()->getCreateur();
+        if ($createur && $createur->getId() === $user->getId()) {
+            return true;
+        }
+
+        $assigne = $tache->getAssigneA();
+
+        return $assigne instanceof User && $assigne->getId() === $user->getId();
+    }
+
+    private function canAssignTache(Projet $projet): bool
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        $createur = $projet->getCreateur();
+
+        return $createur instanceof User && $createur->getId() === $user->getId();
+    }
+
     #[Route('/projets/{id}/taches/nouvelle', name: 'tache_new', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_CHEF_PROJET')]
     public function new(
         Request $request,
         Projet $projet,
@@ -25,16 +58,23 @@ class TacheController extends AbstractController
         $tache = new Tache();
         $tache->setProjet($projet);
 
+        $canAssign = $this->canAssignTache($projet);
+
         $form = $this->createForm(TacheType::class, $tache, [
             'projet' => $projet,
+            'can_change_assignee' => $canAssign,
         ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            if (!$canAssign) {
+                $tache->setAssigneA(null);
+            }
+
             $pieceJointeFile = $form->get('pieceJointe')->getData();
             if ($pieceJointeFile) {
                 $originalFilename = pathinfo($pieceJointeFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', null, $originalFilename);
+                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', $originalFilename);
                 $newFilename = $safeFilename.'-'.uniqid().'.'.$pieceJointeFile->guessExtension();
                 $pieceJointeFile->move($this->getParameter('uploads_directory'), $newFilename);
                 $tache->setPieceJointeName($newFilename);
@@ -51,24 +91,37 @@ class TacheController extends AbstractController
         return $this->render('tache/new.html.twig', [
             'projet' => $projet,
             'form' => $form->createView(),
+            'can_assign_tasks' => $canAssign,
         ]);
     }
 
     #[Route('/taches/{id}/modifier', name: 'tache_edit', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_USER')]
     public function edit(
         Request $request,
         Tache $tache,
         EntityManagerInterface $em
     ): Response {
-        if ($tache->getProjet()->getCreateur() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+        if (!$this->canManageTache($tache)) {
             $this->addFlash('error', 'Vous n\'avez pas les droits pour modifier cette tâche.');
             return $this->redirectToRoute('projet_index');
         }
 
-        $form = $this->createForm(TacheType::class, $tache);
+        $projet = $tache->getProjet();
+        $canAssign = $this->canAssignTache($projet);
+        $assigneAvantModification = $tache->getAssigneA();
+
+        $form = $this->createForm(TacheType::class, $tache, [
+            'projet' => $projet,
+            'can_change_assignee' => $canAssign,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            if (!$canAssign) {
+                $tache->setAssigneA($assigneAvantModification);
+            }
+
             $pieceJointeFile = $form->get('pieceJointe')->getData();
             if ($pieceJointeFile) {
                 if ($tache->getPieceJointeName()) {
@@ -79,7 +132,7 @@ class TacheController extends AbstractController
                 }
 
                 $originalFilename = pathinfo($pieceJointeFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', null, $originalFilename);
+                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', $originalFilename);
                 $newFilename = $safeFilename.'-'.uniqid().'.'.$pieceJointeFile->guessExtension();
                 $pieceJointeFile->move($this->getParameter('uploads_directory'), $newFilename);
                 $tache->setPieceJointeName($newFilename);
@@ -95,10 +148,45 @@ class TacheController extends AbstractController
         return $this->render('tache/edit.html.twig', [
             'tache' => $tache,
             'form' => $form->createView(),
+            'can_assign_tasks' => $canAssign,
         ]);
     }
 
+    #[Route('/taches/{id}/statut', name: 'tache_statut', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function changeStatut(Request $request, Tache $tache, EntityManagerInterface $em): Response
+    {
+        $projetId = $tache->getProjet()->getId();
+
+        if (!$this->isCsrfTokenValid('statut'.$tache->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token CSRF invalide.');
+
+            return $this->redirectToRoute('projet_show', ['id' => $projetId]);
+        }
+
+        if (!$this->canManageTache($tache)) {
+            $this->addFlash('error', 'Vous n\'avez pas les droits pour modifier le statut de cette tâche.');
+
+            return $this->redirectToRoute('projet_show', ['id' => $projetId]);
+        }
+
+        $statut = (string) $request->request->get('statut');
+        if (!\in_array($statut, ['a_faire', 'en_cours', 'terminee'], true)) {
+            $this->addFlash('error', 'Statut invalide.');
+
+            return $this->redirectToRoute('projet_show', ['id' => $projetId]);
+        }
+
+        $tache->setStatut($statut);
+        $em->flush();
+
+        $this->addFlash('success', 'Le statut de la tâche a été mis à jour.');
+
+        return $this->redirectToRoute('projet_show', ['id' => $projetId]);
+    }
+
     #[Route('/taches/{id}/supprimer', name: 'tache_delete', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
     public function delete(Request $request, Tache $tache, EntityManagerInterface $em): Response
     {
         if (!$this->isCsrfTokenValid('delete'.$tache->getId(), $request->request->get('_token'))) {
@@ -106,7 +194,7 @@ class TacheController extends AbstractController
             return $this->redirectToRoute('projet_index');
         }
 
-        if ($tache->getProjet()->getCreateur() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+        if (!$this->canManageTache($tache)) {
             $this->addFlash('error', 'Vous n\'avez pas les droits pour supprimer cette tâche.');
             return $this->redirectToRoute('projet_index');
         }

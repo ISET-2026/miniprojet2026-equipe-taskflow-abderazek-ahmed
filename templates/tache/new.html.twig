@@ -26,14 +26,21 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 {{ form_label(form.priorite) }}
                                 {{ form_widget(form.priorite, {'attr': {'class': 'form-select'}}) }}
                                 {{ form_errors(form.priorite) }}
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form_label(form.statut) }}
+                                {{ form_widget(form.statut, {'attr': {'class': 'form-select'}}) }}
+                                {{ form_errors(form.statut) }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 {{ form_label(form.dateEcheance) }}
                                 {{ form_widget(form.dateEcheance, {'attr': {'class': 'form-control'}}) }}
@@ -44,6 +51,9 @@
 
                     <div class="mb-3">
                         {{ form_label(form.assigneA) }}
+                        {% if not can_assign_tasks %}
+                            <p class="form-text text-muted mb-1">Seul le propriétaire du projet peut assigner une tâche à un utilisateur.</p>
+                        {% endif %}
                         {{ form_widget(form.assigneA, {'attr': {'class': 'form-select'}}) }}
                         {{ form_errors(form.assigneA) }}
                     </div>

@@ -44,23 +44,31 @@ security:
                 lifetime: 604800 # 1 week
                 path: /
 
-    # Access control
+    # Access control (le premier motif qui correspond s’applique — du plus spécifique au plus général)
     access_control:
-        # Voir les projets - tout le monde
+        # Créer un projet — ROLE_CHEF_PROJET (avant la règle large ^/projets)
+        - { path: '^/projets/nouveau$', roles: ROLE_CHEF_PROJET }
+
+        # Modifier / supprimer un projet — utilisateur connecté ; créateur ou admin vérifiés dans ProjetController
+        - { path: '^/projets/\d+/modifier$', roles: ROLE_USER }
+        - { path: '^/projets/\d+/supprimer$', roles: ROLE_USER }
+
+        # Créer / assigner une tâche — ROLE_USER + ROLE_CHEF_PROJET (= chef de projet, via hiérarchie)
+        - { path: '^/projets/\d+/taches/', roles: [ROLE_USER, ROLE_CHEF_PROJET] }
+
+        # Modifier / supprimer / statut d’une tâche — ROLE_USER
+        - { path: '^/taches/', roles: ROLE_USER }
+
+        # Gérer les étiquettes — ROLE_ADMIN
+        - { path: '^/etiquettes', roles: ROLE_ADMIN }
+
+        # Voir les projets (liste + détail) — tout le monde
         - { path: ^/projets, roles: PUBLIC_ACCESS }
-
-        # Créer un projet - ROLE_CHEF_PROJET
-        - { path: ^/projets/nouveau, roles: ROLE_CHEF_PROJET }
-
-        # Modifier/supprimer un projet - vérifié dans le contrôleur avec IsGranted
-        # Les routes sont accessibles mais le contrôleur vérifie le créateur ou ROLE_ADMIN
 
         # Authentification
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/logout, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
-
-    # Note: Only the *first* matching rule is applied
 
 when@test:
     security:

@@ -25,6 +25,11 @@
                     </div>
 
                     <div class="mb-3">
+                        {{ form_widget(registrationForm.accountType, {'attr': {'class': 'd-flex flex-column gap-2'}}) }}
+                        {{ form_errors(registrationForm.accountType) }}
+                    </div>
+
+                    <div class="mb-3">
                         {{ form_label(registrationForm.plainPassword.first) }}
                         {{ form_widget(registrationForm.plainPassword.first, {'attr': {'class': 'form-control'}}) }}
                         {{ form_errors(registrationForm.plainPassword.first) }}

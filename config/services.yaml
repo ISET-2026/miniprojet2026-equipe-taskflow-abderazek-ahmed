@@ -9,6 +9,9 @@
 parameters:
     app.images_directory: '%kernel.project_dir%/public/images/projets'
     app.uploads_directory: '%kernel.project_dir%/public/uploads/taches'
+    # Aliases used by controllers via getParameter()
+    images_directory: '%app.images_directory%'
+    uploads_directory: '%app.uploads_directory%'
 
 services:
     # default configuration for services in *this* file

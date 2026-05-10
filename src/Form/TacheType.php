@@ -23,6 +23,7 @@ class TacheType extends AbstractType
     {
         /** @var Projet|null $projet */
         $projet = $options['data']->getProjet() ?? $options['projet'] ?? null;
+        $canChangeAssignee = $options['can_change_assignee'];
 
         $builder
             ->add('titre', TextType::class, [
@@ -43,6 +44,15 @@ class TacheType extends AbstractType
                     'Urgente' => 'urgente',
                 ],
             ])
+            ->add('statut', ChoiceType::class, [
+                'label' => 'Statut',
+                'choices' => [
+                    'À faire' => 'a_faire',
+                    'En cours' => 'en_cours',
+                    'Terminée' => 'terminee',
+                ],
+                'attr' => ['class' => 'form-select'],
+            ])
             ->add('dateEcheance', DateType::class, [
                 'label' => 'Date d\'échéance',
                 'widget' => 'single_text',
@@ -55,6 +65,7 @@ class TacheType extends AbstractType
                 'required' => false,
                 'placeholder' => 'Choisir un utilisateur',
                 'attr' => ['class' => 'form-select'],
+                'disabled' => !$canChangeAssignee,
             ])
             ->add('etiquettes', EntityType::class, [
                 'label' => 'Étiquettes',
@@ -94,6 +105,8 @@ class TacheType extends AbstractType
             'csrf_field_name' => '_token',
             'csrf_token_id' => 'tache',
             'projet' => null,
+            'can_change_assignee' => true,
         ]);
+        $resolver->setAllowedTypes('can_change_assignee', 'bool');
     }
 }

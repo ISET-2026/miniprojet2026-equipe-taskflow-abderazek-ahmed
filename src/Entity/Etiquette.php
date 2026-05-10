@@ -7,10 +7,12 @@ use ApiPlatform\Metadata\ApiResource;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: EtiquetteRepository::class)]
+#[UniqueEntity(fields: ['nom'], message: 'Une étiquette avec ce nom existe déjà.')]
 #[ApiResource(
     normalizationContext: ['groups' => ['etiquette:read']],
     denormalizationContext: ['groups' => ['etiquette:write']],
@@ -27,7 +29,7 @@ class Etiquette
 
     #[ORM\Column(length: 50, unique: true)]
     #[Assert\NotBlank]
-    #[Assert\Length(min: 3, max: 50)]
+    #[Assert\Length(max: 50)]
     #[Groups(['etiquette:read', 'etiquette:write'])]
     private ?string $nom = null;
 

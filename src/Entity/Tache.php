@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\TacheRepository;
 use ApiPlatform\Metadata\ApiResource;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -26,7 +28,7 @@ class Tache
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 5, max: 255)]
-    #[Groups(['tache:read', 'tache:write'])]
+    #[Groups(['tache:read', 'tache:write', 'projet:read'])]
     private ?string $titre = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -42,7 +44,7 @@ class Tache
     #[ORM\Column(length: 20)]
     #[Assert\NotNull]
     #[Assert\Choice(choices: ['a_faire', 'en_cours', 'terminee'])]
-    #[Groups(['tache:read', 'tache:write'])]
+    #[Groups(['tache:read', 'tache:write', 'projet:read'])]
     private ?string $statut = 'a_faire';
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

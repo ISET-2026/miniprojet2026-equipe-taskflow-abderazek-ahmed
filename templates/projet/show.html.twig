@@ -8,7 +8,7 @@
         <i class="bi bi-folder"></i> {{ projet.nom }}
     </h1>
     <div>
-        {% if projet.createur == app.user or is_granted('ROLE_ADMIN') %}
+        {% if is_granted('ROLE_ADMIN') or (app.user and projet.createur and projet.createur.id == app.user.id) %}
         <a href="{{ path('projet_edit', {id: projet.id}) }}" class="btn btn-outline-secondary">
             <i class="bi bi-pencil"></i> Modifier
         </a>
@@ -19,7 +19,7 @@
             </button>
         </form>
         {% endif %}
-        {% if is_granted('ROLE_USER') %}
+        {% if is_granted('ROLE_CHEF_PROJET') %}
         <a href="{{ path('tache_new', {id: projet.id}) }}" class="btn btn-success">
             <i class="bi bi-plus-circle"></i> Nouvelle tâche
         </a>
@@ -125,6 +125,7 @@
                             </thead>
                             <tbody>
                                 {% for tache in projet.taches %}
+                                    {% set peut_gerer_tache = is_granted('ROLE_ADMIN') or (app.user and projet.createur and projet.createur.id == app.user.id) or (app.user and tache.assigneA and tache.assigneA.id == app.user.id) %}
                                     <tr>
                                         <td>{{ tache.titre }}</td>
                                         <td>
@@ -141,7 +142,16 @@
                                             </span>
                                         </td>
                                         <td>
-                                            {% if tache.statut == 'a_faire' %}
+                                            {% if peut_gerer_tache %}
+                                                <form method="post" action="{{ path('tache_statut', {id: tache.id}) }}" class="d-flex align-items-center gap-1">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('statut' ~ tache.id) }}">
+                                                    <select name="statut" class="form-select form-select-sm" style="min-width: 9rem;" onchange="this.form.submit()">
+                                                        <option value="a_faire" {{ tache.statut == 'a_faire' ? 'selected' : '' }}>À faire</option>
+                                                        <option value="en_cours" {{ tache.statut == 'en_cours' ? 'selected' : '' }}>En cours</option>
+                                                        <option value="terminee" {{ tache.statut == 'terminee' ? 'selected' : '' }}>Terminée</option>
+                                                    </select>
+                                                </form>
+                                            {% elseif tache.statut == 'a_faire' %}
                                                 <span class="badge bg-secondary">À faire</span>
                                             {% elseif tache.statut == 'en_cours' %}
                                                 <span class="badge bg-primary">En cours</span>
@@ -164,6 +174,7 @@
                                             {% endfor %}
                                         </td>
                                         <td>
+                                            {% if peut_gerer_tache %}
                                             <a href="{{ path('tache_edit', {id: tache.id}) }}" class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
@@ -173,6 +184,9 @@
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
+                                            {% else %}
+                                            <span class="text-muted small">—</span>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -183,7 +197,7 @@
                     <div class="text-center py-4 text-muted">
                         <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                         <p class="mt-2">Aucune tâche pour ce projet.</p>
-                        {% if is_granted('ROLE_USER') %}
+                        {% if is_granted('ROLE_CHEF_PROJET') %}
                             <a href="{{ path('tache_new', {id: projet.id}) }}" class="btn btn-success">
                                 <i class="bi bi-plus-circle"></i> Ajouter une tâche
                             </a>
@@ -198,10 +212,10 @@
     <div class="col-lg-4">
         <div class="sidebar">
             <!-- Recent Projects -->
-            {% if app.user and recents is defined and recents|length > 0 %}
+            {% if recents is defined and recents|length > 0 %}
                 <div class="card mb-3">
                     <div class="card-header">
-                        <h6 class="mb-0"><i class="bi bi-clock-history"></i> Derniers projets</h6>
+                        <h6 class="mb-0">📋 Derniers projets consultés</h6>
                     </div>
                     <div class="card-body p-0">
                         <ul class="list-group list-group-flush">

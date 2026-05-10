@@ -17,10 +17,12 @@
     <div class="card-body">
         <h5 class="card-title"><i class="bi bi-search"></i> Rechercher</h5>
         <form method="get" action="{{ path('projet_index') }}" class="row g-3">
-            <div class="col-md-4">
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-0">Nom</label>
                 <input type="text" name="nom" class="form-control" placeholder="Nom du projet" value="{{ app.request.query.get('nom') }}">
             </div>
-            <div class="col-md-3">
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small text-muted mb-0">Statut</label>
                 <select name="statut" class="form-select">
                     <option value="">Tous les statuts</option>
                     <option value="planifie" {{ app.request.query.get('statut') == 'planifie' ? 'selected' : '' }}>Planifié</option>
@@ -29,7 +31,17 @@
                     <option value="annule" {{ app.request.query.get('statut') == 'annule' ? 'selected' : '' }}>Annulé</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted mb-0">Créateur</label>
+                <select name="createur" class="form-select">
+                    <option value="">Tous les créateurs</option>
+                    {% for u in users %}
+                        <option value="{{ u.id }}" {{ app.request.query.get('createur') == u.id ? 'selected' : '' }}>{{ u.pseudo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small text-muted mb-0">Étiquette</label>
                 <select name="etiquette" class="form-select">
                     <option value="">Toutes les étiquettes</option>
                     {% for etiquette in etiquettes %}
@@ -39,7 +51,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-lg-2 col-md-12 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100">
                     <i class="bi bi-filter"></i> Filtrer
                 </button>
@@ -103,7 +115,7 @@
                         <a href="{{ path('projet_show', {id: projet.id}) }}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-eye"></i>
                         </a>
-                        {% if projet.createur == app.user or is_granted('ROLE_ADMIN') %}
+                        {% if is_granted('ROLE_ADMIN') or (app.user and projet.createur and projet.createur.id == app.user.id) %}
                         <a href="{{ path('projet_edit', {id: projet.id}) }}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-pencil"></i>
                         </a>
@@ -128,10 +140,10 @@
     </table>
 </div>
 
-<!-- Sidebar - Recent Projects -->
-{% if app.user and recents is defined and recents|length > 0 %}
+<!-- Sidebar - Recent Projects (session, y compris visiteurs non connectés) -->
+{% if recents is defined and recents|length > 0 %}
 <div class="sidebar">
-    <h5><i class="bi bi-clock-history"></i> Derniers projets consultés</h5>
+    <h5>📋 Derniers projets consultés</h5>
     <ul class="list-group mb-3">
         {% for projet in recents %}
             <li class="list-group-item">

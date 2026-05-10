@@ -19,8 +19,8 @@ class TaskFlowReportCommandTest extends KernelTestCase
 
         $output = $commandTester->getDisplay();
         $this->assertStringContainsString('📊 Rapport TaskFlow', $output);
-        $this->assertStringContainsString('Statistiques Globales', $output);
-        $this->assertStringContainsString('Répartition des Statuts', $output);
+        $this->assertStringContainsString('Statistiques globales', $output);
+        $this->assertStringContainsString('Répartition des statuts', $output);
 
         $this->assertSame(0, $commandTester->getStatusCode());
     }

@@ -2,38 +2,45 @@
 
 namespace App\Controller;
 
+use App\Entity\Projet;
 use App\Entity\Tache;
+use App\Entity\User;
 use App\Form\TacheType;
+use App\Service\FileUploader;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use App\Entity\Projet;
-use App\Entity\User;
 
 class TacheController extends AbstractController
 {
-    private function sendAssignmentNotification(MailerInterface $mailer, User $assignee, Tache $tache): void
+    public function __construct(
+        private readonly FileUploader $tachePieceUploader,
+    ) {
+    }
+
+    private function sendAssignmentNotification(MailerInterface $mailer, User $assignee, Tache $tache, User $assigner): void
     {
-        $email = (new Email())
-            ->from('no-reply@taskflow.local')
+        $email = (new TemplatedEmail())
+            ->from('noreply@taskflow.com')
             ->to($assignee->getEmail())
-            ->subject('TaskFlow - Nouvelle assignation de tâche')
-            ->text(sprintf(
-                "Bonjour %s,\n\nVous avez été assigné à la tâche \"%s\" dans le projet \"%s\".\n\nConnectez-vous pour consulter les détails.\n",
-                $assignee->getPseudo(),
-                $tache->getTitre(),
-                $tache->getProjet()?->getNom()
-            ));
+            ->subject('✅ Nouvelle tâche assignée : '.$tache->getTitre())
+            ->htmlTemplate('emails/tache_assignee.html.twig')
+            ->context([
+                'assignee' => $assignee,
+                'assigner' => $assigner,
+                'tache' => $tache,
+                'projet' => $tache->getProjet(),
+            ]);
 
         try {
             $mailer->send($email);
         } catch (\Throwable) {
-            // Do not block business flow if mail transport is not configured.
+            // Ne pas bloquer si le transport mail n'est pas configuré (ex. dev).
         }
     }
 
@@ -58,56 +65,37 @@ class TacheController extends AbstractController
         return $assigne instanceof User && $assigne->getId() === $user->getId();
     }
 
-    private function canAssignTache(Projet $projet): bool
-    {
-        $user = $this->getUser();
-        if (!$user instanceof User) {
-            return false;
-        }
-
-        $createur = $projet->getCreateur();
-
-        return $createur instanceof User && $createur->getId() === $user->getId();
-    }
-
     #[Route('/projets/{id}/taches/nouvelle', name: 'tache_new', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_USER')]
     public function new(
         Request $request,
         Projet $projet,
         EntityManagerInterface $em,
-        MailerInterface $mailer
+        MailerInterface $mailer,
     ): Response {
         $tache = new Tache();
         $tache->setProjet($projet);
 
-        $canAssign = $this->canAssignTache($projet);
+        $canChangeAssignee = $this->isGranted('ROLE_USER');
 
         $form = $this->createForm(TacheType::class, $tache, [
             'projet' => $projet,
-            'can_change_assignee' => $canAssign,
+            'can_change_assignee' => $canChangeAssignee,
         ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if (!$canAssign) {
-                $tache->setAssigneA(null);
-            }
-
             $pieceJointeFile = $form->get('pieceJointe')->getData();
             if ($pieceJointeFile) {
-                $originalFilename = pathinfo($pieceJointeFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', $originalFilename);
-                $newFilename = $safeFilename.'-'.uniqid().'.'.$pieceJointeFile->guessExtension();
-                $pieceJointeFile->move($this->getParameter('uploads_directory'), $newFilename);
-                $tache->setPieceJointeName($newFilename);
+                $tache->setPieceJointeName($this->tachePieceUploader->upload($pieceJointeFile));
             }
 
             $em->persist($tache);
             $em->flush();
 
-            if ($tache->getAssigneA() instanceof User) {
-                $this->sendAssignmentNotification($mailer, $tache->getAssigneA(), $tache);
+            $current = $this->getUser();
+            if ($tache->getAssigneA() instanceof User && $current instanceof User) {
+                $this->sendAssignmentNotification($mailer, $tache->getAssigneA(), $tache, $current);
             }
 
             $this->addFlash('success', 'La tâche a été créée avec succès.');
@@ -118,7 +106,7 @@ class TacheController extends AbstractController
         return $this->render('tache/new.html.twig', [
             'projet' => $projet,
             'form' => $form->createView(),
-            'can_assign_tasks' => $canAssign,
+            'can_assign_tasks' => $canChangeAssignee,
         ]);
     }
 
@@ -128,48 +116,40 @@ class TacheController extends AbstractController
         Request $request,
         Tache $tache,
         EntityManagerInterface $em,
-        MailerInterface $mailer
+        MailerInterface $mailer,
     ): Response {
         if (!$this->canManageTache($tache)) {
             $this->addFlash('error', 'Vous n\'avez pas les droits pour modifier cette tâche.');
+
             return $this->redirectToRoute('projet_index');
         }
 
         $projet = $tache->getProjet();
-        $canAssign = $this->canAssignTache($projet);
+        $canChangeAssignee = $this->isGranted('ROLE_USER');
         $assigneAvantModification = $tache->getAssigneA();
 
         $form = $this->createForm(TacheType::class, $tache, [
             'projet' => $projet,
-            'can_change_assignee' => $canAssign,
+            'can_change_assignee' => $canChangeAssignee,
         ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if (!$canAssign) {
-                $tache->setAssigneA($assigneAvantModification);
-            }
-
             $pieceJointeFile = $form->get('pieceJointe')->getData();
             if ($pieceJointeFile) {
                 if ($tache->getPieceJointeName()) {
-                    $oldFilePath = $this->getParameter('uploads_directory').'/'.$tache->getPieceJointeName();
-                    if (file_exists($oldFilePath)) {
-                        unlink($oldFilePath);
-                    }
+                    $this->tachePieceUploader->remove($tache->getPieceJointeName());
                 }
-
-                $originalFilename = pathinfo($pieceJointeFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', $originalFilename);
-                $newFilename = $safeFilename.'-'.uniqid().'.'.$pieceJointeFile->guessExtension();
-                $pieceJointeFile->move($this->getParameter('uploads_directory'), $newFilename);
-                $tache->setPieceJointeName($newFilename);
+                $tache->setPieceJointeName($this->tachePieceUploader->upload($pieceJointeFile));
             }
 
             $em->flush();
 
-            if ($tache->getAssigneA() instanceof User && $tache->getAssigneA() !== $assigneAvantModification) {
-                $this->sendAssignmentNotification($mailer, $tache->getAssigneA(), $tache);
+            $current = $this->getUser();
+            if ($tache->getAssigneA() instanceof User
+                && $current instanceof User
+                && $tache->getAssigneA() !== $assigneAvantModification) {
+                $this->sendAssignmentNotification($mailer, $tache->getAssigneA(), $tache, $current);
             }
 
             $this->addFlash('success', 'La tâche a été modifiée avec succès.');
@@ -180,7 +160,7 @@ class TacheController extends AbstractController
         return $this->render('tache/edit.html.twig', [
             'tache' => $tache,
             'form' => $form->createView(),
-            'can_assign_tasks' => $canAssign,
+            'can_assign_tasks' => $canChangeAssignee,
         ]);
     }
 
@@ -223,21 +203,20 @@ class TacheController extends AbstractController
     {
         if (!$this->isCsrfTokenValid('delete'.$tache->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Token CSRF invalide.');
+
             return $this->redirectToRoute('projet_index');
         }
 
         if (!$this->canManageTache($tache)) {
             $this->addFlash('error', 'Vous n\'avez pas les droits pour supprimer cette tâche.');
+
             return $this->redirectToRoute('projet_index');
         }
 
         $projet = $tache->getProjet();
 
         if ($tache->getPieceJointeName()) {
-            $filePath = $this->getParameter('uploads_directory').'/'.$tache->getPieceJointeName();
-            if (file_exists($filePath)) {
-                unlink($filePath);
-            }
+            $this->tachePieceUploader->remove($tache->getPieceJointeName());
         }
 
         $em->remove($tache);

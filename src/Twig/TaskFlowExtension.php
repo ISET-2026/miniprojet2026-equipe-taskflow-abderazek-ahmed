@@ -32,15 +32,19 @@ class TaskFlowExtension extends AbstractExtension
     /**
      * Filtre : convertit une date en format relatif "il y a X jours"
      */
-    public function timeAgo(\DateTime $date): string
+    public function timeAgo(\DateTimeInterface $date): string
     {
-        $now = new \DateTime();
-        $interval = $now->diff($date);
+        $now = new \DateTimeImmutable();
+        $mutable = \DateTime::createFromInterface($date);
+        $interval = $now->diff($mutable);
 
-        if ($interval->days == 0) {
-            if ($interval->h == 0) {
-                return 'il y a ' . $interval->i . ' minute' . ($interval->i > 1 ? 's' : '');
+        if ($interval->days === 0) {
+            if ($interval->h === 0) {
+                $m = max(0, $interval->i);
+
+                return 'il y a ' . $m . ' minute' . ($m > 1 ? 's' : '');
             }
+
             return 'il y a ' . $interval->h . ' heure' . ($interval->h > 1 ? 's' : '');
         }
 
@@ -85,23 +89,29 @@ class TaskFlowExtension extends AbstractExtension
      */
     public function progressBar(int $percentage): string
     {
-        // Déterminer la couleur selon le pourcentage
-        if ($percentage >= 75) {
-            $color = 'bg-success';
-        } elseif ($percentage >= 50) {
-            $color = 'bg-info';
-        } elseif ($percentage >= 25) {
-            $color = 'bg-warning';
+        $p = max(0, min(100, $percentage));
+
+        if ($p > 75) {
+            $barClasses = 'progress-bar bg-success text-white';
+            $extraStyle = '';
+        } elseif ($p > 50) {
+            $barClasses = 'progress-bar bg-warning text-dark';
+            $extraStyle = '';
+        } elseif ($p > 25) {
+            $barClasses = 'progress-bar text-white';
+            $extraStyle = 'background-color:#fd7e14;';
         } else {
-            $color = 'bg-danger';
+            $barClasses = 'progress-bar bg-danger text-white';
+            $extraStyle = '';
         }
 
         return sprintf(
-            '<div class="progress"><div class="progress-bar %s" role="progressbar" style="width: %d%%" aria-valuenow="%d" aria-valuemin="0" aria-valuemax="100">%d%%</div></div>',
-            $color,
-            $percentage,
-            $percentage,
-            $percentage
+            '<div class="progress"><div class="%s" role="progressbar" style="width: %d%%;%s" aria-valuenow="%d" aria-valuemin="0" aria-valuemax="100">%d%%</div></div>',
+            $barClasses,
+            $p,
+            $extraStyle,
+            $p,
+            $p
         );
     }
 }

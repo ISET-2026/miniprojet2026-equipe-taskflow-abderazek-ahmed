@@ -2,6 +2,7 @@ api_platform:
     title: TaskFlow API
     version: 1.0.0
     defaults:
-        stateless: true
+        # évite les 500 lorsque Symfony touche à la session (tests, navigateur) avec l’API Platform
+        stateless: false
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']

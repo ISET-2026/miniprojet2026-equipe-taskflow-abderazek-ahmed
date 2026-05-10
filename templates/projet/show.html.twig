@@ -78,7 +78,7 @@
             <p class="project-subtitle">Vue détaillée du projet, de son équipe et de son avancement.</p>
         </div>
         <div class="project-actions">
-            {% if is_granted('ROLE_CHEF_PROJET') %}
+            {% if is_granted('ROLE_USER') %}
                 <a href="{{ path('tache_new', {id: projet.id}) }}" class="btn-pill btn-dark">
                     <i class="bi bi-plus-circle"></i> Nouvelle tâche
                 </a>
@@ -109,7 +109,7 @@
                     <div class="project-main">
                         <div>
                         {% if projet.imageName %}
-                                <img src="{{ asset('images/projets/' ~ projet.imageName) }}" alt="{{ projet.nom }}" class="project-image">
+                                <img src="{{ asset('uploads/projets/' ~ projet.imageName) }}" alt="{{ projet.nom }}" class="project-image">
                         {% else %}
                                 <div class="project-image" style="display:flex;align-items:center;justify-content:center;color:#64748b;">
                                     <i class="bi bi-folder-fill" style="font-size:2rem;"></i>
@@ -133,9 +133,7 @@
 
                     {% if stats is defined %}
                         <div class="progress-title">Progression du projet</div>
-                        <div class="progress-track">
-                            <div class="progress-bar" style="width: {{ stats.progressPercentage }}%"></div>
-                        </div>
+                        {{ progress_bar(stats.progressPercentage)|raw }}
                         <div class="progress-text">{{ stats.progressPercentage }}% des tâches terminées</div>
 
                         <div class="kpi-grid">
@@ -166,7 +164,7 @@
 
             <section class="card">
                 <div class="card-body">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem;flex-wrap:wrap;gap:.5rem;">
                         <h3 class="card-title"><i class="bi bi-list-check text-blue-600"></i> Tâches</h3>
                         <span class="status-chip">{{ projet.taches|length }} tâche(s)</span>
                     </div>
@@ -177,21 +175,24 @@
                                     <tr>
                                         <th>Titre</th>
                                         <th>Priorité</th>
+                                        <th>Créée</th>
                                         <th>Statut</th>
                                         <th>Assigné à</th>
+                                        <th>Pièce jointe</th>
                                         <th>Étiquettes</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                {% for tache in projet.taches %}
+                                {% for tache in paginationTaches %}
                                     {% set peut_gerer_tache = is_granted('ROLE_ADMIN') or (app.user and projet.createur and projet.createur.id == app.user.id) or (app.user and tache.assigneA and tache.assigneA.id == app.user.id) %}
                                     <tr>
                                         <td>{{ tache.titre }}</td>
                                         <td>
                                             {% set priorityClass = tache.priorite == 'basse' ? 'priority-basse' : tache.priorite == 'moyenne' ? 'priority-moyenne' : tache.priorite == 'haute' ? 'priority-haute' : 'priority-urgente' %}
-                                            <span class="mini-chip {{ priorityClass }}">{{ tache.priorite|replace({'_':' '})|title }}</span>
+                                            <span class="mini-chip {{ priorityClass }}" title="{{ tache.priorite }}">{{ tache.priorite|priority_icon }} {{ tache.priorite|replace({'_':' '})|title }}</span>
                                         </td>
+                                        <td class="text-muted" style="font-size:.8rem;">{{ tache.dateCreation|time_ago }}</td>
                                         <td>
                                             {% if peut_gerer_tache %}
                                                 <form method="post" action="{{ path('tache_statut', {id: tache.id}) }}">
@@ -209,6 +210,13 @@
                                         <td>
                                             {% if tache.assigneA %}
                                                 <span class="mini-chip" style="background:#e2e8f0;color:#334155;">{{ tache.assigneA.pseudo }}</span>
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if tache.pieceJointeName %}
+                                                <a class="mini-chip btn btn-sm btn-outline-primary" style="padding:.35rem .6rem;text-decoration:none;" href="{{ asset('uploads/taches/' ~ tache.pieceJointeName) }}" target="_blank" rel="noopener"><i class="bi bi-download"></i></a>
                                             {% else %}
                                                 —
                                             {% endif %}
@@ -241,11 +249,15 @@
                                 {% endfor %}
                                 </tbody>
                             </table>
+                            <div class="taskflow-pagination-bar">
+                                <span class="taskflow-pagination-bar__meta">{{ paginationTaches.totalItemCount }} tâche(s) au total</span>
+                                {{ knp_pagination_render(paginationTaches) }}
+                            </div>
                         {% else %}
                             <div style="padding:1rem;text-align:center;color:#64748b;">
                                 <i class="bi bi-inbox" style="font-size:1.6rem;"></i>
                                 <p style="margin-top:.4rem;">Aucune tâche pour ce projet.</p>
-                                {% if is_granted('ROLE_CHEF_PROJET') %}
+                                {% if is_granted('ROLE_USER') %}
                                     <a href="{{ path('tache_new', {id: projet.id}) }}" class="btn-pill btn-dark" style="margin-top:.4rem;">
                                         <i class="bi bi-plus-circle"></i> Ajouter une tâche
                                     </a>
@@ -264,7 +276,7 @@
                 {% if stats is defined %}
                         <div class="stats-block">
                             <div class="stats-label">Progression</div>
-                            <div class="stats-value">{{ stats.progressPercentage }}%</div>
+                            {{ progress_bar(stats.progressPercentage)|raw }}
                         </div>
                         <div class="stats-block">
                             <div class="stats-label">Jours restants</div>

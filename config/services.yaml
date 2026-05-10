@@ -1,41 +1,38 @@
 # yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
 
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-# See also https://symfony.com/doc/current/service_container/import.html
-
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-    app.images_directory: '%kernel.project_dir%/public/images/projets'
-    app.uploads_directory: '%kernel.project_dir%/public/uploads/taches'
-    # Aliases used by controllers via getParameter()
-    images_directory: '%app.images_directory%'
-    uploads_directory: '%app.uploads_directory%'
     upload_directory_projets: '%kernel.project_dir%/public/uploads/projets'
     upload_directory_taches: '%kernel.project_dir%/public/uploads/taches'
+    images_directory: '%upload_directory_projets%'
+    uploads_directory: '%upload_directory_taches%'
 
 services:
-    # default configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        autowire: true
+        autoconfigure: true
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+            - '../src/Service/FileUploader.php'
 
-    # FileUploader pour les projets
-    App\Service\FileUploader:
+    app.file_uploader_projets:
+        class: App\Service\FileUploader
         arguments:
             $targetDirectory: '%upload_directory_projets%'
 
-    # FileUploader pour les tâches
-    file_uploader_taches:
+    app.file_uploader_taches:
         class: App\Service\FileUploader
         arguments:
             $targetDirectory: '%upload_directory_taches%'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    App\Controller\ProjetController:
+        arguments:
+            $projetImageUploader: '@app.file_uploader_projets'
+
+    App\Controller\TacheController:
+        arguments:
+            $tachePieceUploader: '@app.file_uploader_taches'

@@ -46,6 +46,7 @@ security:
 
     # Access control (le premier motif qui correspond s’applique — du plus spécifique au plus général)
     access_control:
+        - { path: ^/api, roles: PUBLIC_ACCESS }
         # Créer un projet — ROLE_CHEF_PROJET (avant la règle large ^/projets)
         - { path: '^/projets/nouveau$', roles: ROLE_CHEF_PROJET }
 

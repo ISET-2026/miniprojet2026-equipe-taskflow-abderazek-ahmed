@@ -182,6 +182,26 @@
                 footer {
                     margin-top: 2rem;
                 }
+                /* Barre type Bootstrap — TaskFlowExtension::progress_bar (Partie 9) */
+                .progress {
+                    height: 1rem;
+                    overflow: hidden;
+                    border-radius: 0.25rem;
+                    background-color: #e9ecef;
+                }
+                .progress-bar {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    font-size: 0.72rem;
+                    font-weight: 600;
+                    transition: width 0.55s ease;
+                }
+                .progress-bar.bg-success { background-color: #198754 !important; color: #fff !important; }
+                .progress-bar.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+                .progress-bar.bg-danger { background-color: #dc3545 !important; color: #fff !important; }
+
                 @media (min-width: 1024px) {
                     :root {
                         --header-height: 96px;

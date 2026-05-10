@@ -2,9 +2,11 @@
 
 namespace App\Command;
 
+use App\Entity\Projet;
 use App\Repository\ProjetRepository;
 use App\Repository\TacheRepository;
 use App\Repository\UserRepository;
+use App\Service\ProjetStatsCalculator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,6 +24,7 @@ class TaskFlowReportCommand extends Command
         private ProjetRepository $projetRepository,
         private TacheRepository $tacheRepository,
         private UserRepository $userRepository,
+        private ProjetStatsCalculator $statsCalculator,
     ) {
         parent::__construct();
     }
@@ -47,27 +50,55 @@ class TaskFlowReportCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $io->title('📊 Rapport TaskFlow - État des Projets');
+        $io->title('📊 Rapport TaskFlow — État des projets');
 
-        // Récupérer les projets à analyser
         $projets = $this->projetRepository->findAll();
-        $taches = $this->tacheRepository->findAll();
+        if (($projetOpt = $input->getOption('projet')) !== null && $projetOpt !== '') {
+            $p = $this->projetRepository->find((int) $projetOpt);
+            $projets = $p instanceof Projet ? [$p] : [];
+            if (!$projets) {
+                $io->warning(sprintf('Aucun projet trouvé avec l\'ID "%s".', $projetOpt));
+            }
+        }
 
-        // Statistiques globales
-        $io->section('📈 Statistiques Globales');
+        if ($input->getOption('overdue')) {
+            $projets = array_values(array_filter(
+                $projets,
+                fn (Projet $p) => $this->statsCalculator->isOverdue($p),
+            ));
+
+            $io->section('Filtre : projets en retard uniquement');
+            if ([] === $projets) {
+                $io->success('Aucun projet en retard ne correspond aux critères.');
+            } else {
+                $io->writeln(sprintf('%d projet(s) en retard (date limite dépassée avec tâches non terminées).', count($projets)));
+            }
+        }
+
+        $tachesScope = [];
+        foreach ($projets as $projet) {
+            foreach ($projet->getTaches() as $tache) {
+                $tachesScope[] = $tache;
+            }
+        }
+
+        if ([] === $projets) {
+            $io->warning('Pas de projet à inclure dans le rapport (après filtres).');
+        }
+
+        $io->section('📈 Statistiques globales (périmètre filtré)');
         $io->writeln([
-            'Nombre total de projets : <info>' . count($projets) . '</info>',
-            'Nombre total de tâches : <info>' . count($taches) . '</info>',
+            'Nombre de projets : <info>' . count($projets) . '</info>',
+            'Nombre de tâches : <info>' . count($tachesScope) . '</info>',
         ]);
 
-        // Répartition des statuts des projets
-        $io->section('🎯 Répartition des Statuts des Projets');
         $projetsParStatut = [];
         foreach ($projets as $projet) {
             $statut = $projet->getStatut();
             $projetsParStatut[$statut] = ($projetsParStatut[$statut] ?? 0) + 1;
         }
 
+        $io->section('🎯 Répartition des statuts des projets');
         $tableData = [];
         foreach ($projetsParStatut as $statut => $count) {
             $icon = match ($statut) {
@@ -79,85 +110,70 @@ class TaskFlowReportCommand extends Command
             };
             $tableData[] = [$icon . ' ' . ucfirst(str_replace('_', ' ', $statut)), $count];
         }
-        $io->table(['Statut', 'Nombre'], $tableData);
+        if ($tableData) {
+            $io->table(['Statut', 'Nombre'], $tableData);
+        }
 
-        // Répartition des statuts des tâches
-        $io->section('✅ Répartition des Statuts des Tâches');
         $tachesParStatut = [];
-        foreach ($taches as $tache) {
+        foreach ($tachesScope as $tache) {
             $statut = $tache->getStatut();
             $tachesParStatut[$statut] = ($tachesParStatut[$statut] ?? 0) + 1;
         }
 
-        $tableData = [];
+        $io->section('✅ Répartition des statuts des tâches');
+        $taskRows = [];
         foreach ($tachesParStatut as $statut => $count) {
-            $tableData[] = [ucfirst(str_replace('_', ' ', $statut)), $count];
+            $taskRows[] = [ucfirst(str_replace('_', ' ', $statut)), $count];
         }
-        $io->table(['Statut', 'Nombre'], $tableData);
-
-        // Projets en retard
-        $io->section('⚠️ Projets en Retard');
-        $projetsEnRetard = [];
-        foreach ($projets as $projet) {
-            $now = new \DateTime();
-            $dateLimit = $projet->getDateLimite();
-            $taskNonTerminees = $this->tacheRepository->findBy([
-                'projet' => $projet,
-                'statut' => 'a_faire',
-            ]);
-
-            if ($dateLimit < $now && count($taskNonTerminees) > 0) {
-                $projetsEnRetard[] = $projet;
-            }
+        if ($taskRows) {
+            $io->table(['Statut', 'Nombre'], $taskRows);
         }
+
+        $io->section('⚠️ Projets en retard (date limite + tâches non terminées)');
+        $projetsEnRetard = array_values(array_filter(
+            $projets,
+            fn (Projet $projet) => $this->statsCalculator->isOverdue($projet),
+        ));
 
         if (empty($projetsEnRetard)) {
-            $io->success('✅ Aucun projet en retard !');
+            $io->success('Aucun projet en retard.');
         } else {
-            $tableData = [];
+            $rows = [];
             foreach ($projetsEnRetard as $projet) {
-                $daysOverdue = $projet->getDateLimite()->diff(new \DateTime())->days;
-                $nonTerminees = $this->tacheRepository->count([
-                    'projet' => $projet,
-                    'statut' => 'a_faire',
-                ]);
-                $tableData[] = [
-                    $projet->getNom(),
-                    $projet->getDateLimite()->format('d/m/Y'),
-                    $daysOverdue . ' jour(s)',
-                    $nonTerminees,
-                ];
+                $nonTerminee = $this->tacheRepository->count(['projet' => $projet, 'statut' => 'a_faire'])
+                    + $this->tacheRepository->count(['projet' => $projet, 'statut' => 'en_cours']);
+                $rows[] = [$projet->getNom(), $projet->getDateLimite()->format('d/m/Y'), $nonTerminee];
             }
-            $io->table(['Projet', 'Date Limite', 'Retard', 'Tâches Non Terminées'], $tableData);
-            $io->warning(count($projetsEnRetard) . ' projet(s) en retard !');
+            $io->table(['Projet', 'Date limite', 'Tâches non terminées'], $rows);
+            $io->warning(count($projetsEnRetard) . ' projet(s) en retard.');
         }
 
-        // Top 5 des utilisateurs les plus actifs
-        $io->section('👥 Top 5 des Utilisateurs les Plus Actifs');
+        $io->section('👥 Top 5 des utilisateurs (tâches assignées)');
         $utilisateurs = $this->userRepository->findAll();
         $activiteUtilisateurs = [];
         foreach ($utilisateurs as $user) {
-            $countTaches = $this->tacheRepository->count(['assigneA' => $user]);
-            if ($countTaches > 0) {
-                $activiteUtilisateurs[$user->getPseudo()] = $countTaches;
-            }
+            $activiteUtilisateurs[$user->getPseudo()] = $this->tacheRepository->count(['assigneA' => $user]);
         }
 
-        if (empty($activiteUtilisateurs)) {
-            $io->info('Aucune tâche assignée aux utilisateurs.');
+        arsort($activiteUtilisateurs);
+        $top5 = array_slice($activiteUtilisateurs, 0, 5, true);
+
+        $tableDataTop = [];
+        $rank = 1;
+        foreach ($top5 as $pseudo => $count) {
+            if ($count === 0) {
+                continue;
+            }
+            $tableDataTop[] = [$rank++, $pseudo, $count];
+        }
+
+        if (empty($tableDataTop)) {
+            $io->info('Aucune assignation trouvée pour le classement.');
         } else {
-            arsort($activiteUtilisateurs);
-            $top5 = array_slice($activiteUtilisateurs, 0, 5, true);
-            $tableData = [];
-            $rank = 1;
-            foreach ($top5 as $pseudo => $count) {
-                $tableData[] = [$rank++, $pseudo, $count];
-            }
-            $io->table(['Rang', 'Utilisateur', 'Tâches Assignées'], $tableData);
+            $io->table(['Rang', 'Pseudo', 'Tâches assignées'], $tableDataTop);
         }
 
-        $io->newLine();
-        $io->info('📊 Rapport généré avec succès !');
+        $io->success('Rapport terminé.');
 
         return Command::SUCCESS;
     }

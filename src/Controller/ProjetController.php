@@ -8,8 +8,10 @@ use App\Form\ProjetType;
 use App\Repository\EtiquetteRepository;
 use App\Repository\ProjetRepository;
 use App\Repository\UserRepository;
+use App\Service\FileUploader;
 use App\Service\ProjetStatsCalculator;
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -22,10 +24,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class ProjetController extends AbstractController
 {
     private const RECENTS_LIMIT = 5;
+
     private const SESSION_KEY = 'recent_projects';
 
     public function __construct(
         private readonly ProjetStatsCalculator $projetStatsCalculator,
+        private readonly FileUploader $projetImageUploader,
     ) {
     }
 
@@ -85,23 +89,26 @@ class ProjetController extends AbstractController
 
     #[Route(name: 'projet_index', defaults: ['id' => null])]
     #[Route('/{id}', name: 'projet_show', requirements: ['id' => '\d+'])]
-    public function index(Request $request, RequestStack $requestStack, ProjetRepository $projetRepository, UserRepository $userRepo, EtiquetteRepository $etiquetteRepo, ?Projet $projet = null): Response
-    {
+    public function index(
+        Request $request,
+        RequestStack $requestStack,
+        ProjetRepository $projetRepository,
+        UserRepository $userRepo,
+        EtiquetteRepository $etiquetteRepo,
+        PaginatorInterface $paginator,
+        ?Projet $projet = null,
+    ): Response {
         $session = $requestStack->getSession();
 
-        // If an id is provided, show project details
         if ($projet) {
-            // Add to recent projects in session
             $recents = $session->get(self::SESSION_KEY, []);
             $projetId = $projet->getId();
 
-            // Remove duplicates and add to beginning
-            $recents = array_filter($recents, fn($id) => $id !== $projetId);
+            $recents = array_filter($recents, fn ($id) => $id !== $projetId);
             array_unshift($recents, $projetId);
             $recents = array_slice($recents, 0, self::RECENTS_LIMIT);
             $session->set(self::SESSION_KEY, $recents);
 
-            // Calculate stats (service injecté par constructeur)
             $stats = [
                 'progressPercentage' => $this->projetStatsCalculator->getProgressPercentage($projet),
                 'taskCountByStatus' => $this->projetStatsCalculator->getTaskCountByStatus($projet),
@@ -109,7 +116,6 @@ class ProjetController extends AbstractController
                 'remainingDays' => $this->projetStatsCalculator->getRemainingDays($projet),
             ];
 
-            // Get recent projects for sidebar
             $recentsProjects = [];
             foreach ($recents as $id) {
                 $p = $projetRepository->find($id);
@@ -118,27 +124,51 @@ class ProjetController extends AbstractController
                 }
             }
 
+            $paginationTaches = $paginator->paginate(
+                $projet->getTaches()->toArray(),
+                $request->query->getInt('page_taches', 1),
+                10,
+                [
+                    'pageParameterName' => 'page_taches',
+                    'wrap-queries' => true,
+                ]
+            );
+
             return $this->render('projet/show.html.twig', [
                 'projet' => $projet,
                 'stats' => $stats,
                 'recents' => $recentsProjects,
+                'paginationTaches' => $paginationTaches,
             ]);
         }
 
-        // List all projects with filters
         $nom = $request->query->get('nom');
         $statut = $request->query->get('statut');
         $createurId = $request->query->get('createur');
         $etiquetteId = $request->query->get('etiquette');
 
-        $createur = $createurId ? $userRepo->find($createurId) : null;
-        $etiquette = $etiquetteId ? $etiquetteRepo->find($etiquetteId) : null;
+        $createur = $createurId ? $userRepo->find((int) $createurId) : null;
+        $etiquette = $etiquetteId ? $etiquetteRepo->find((int) $etiquetteId) : null;
 
-        $projects = $projetRepository->findByFilters($nom, $statut ?: null, $createur, $etiquette);
+        $qb = $projetRepository->createFilteredListingQueryBuilder($nom ?: null, $statut ?: null, $createur, $etiquette);
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $request->query->getInt('page', 1),
+            6,
+            [
+                'defaultSortFieldName' => 'p.dateCreation',
+                'defaultSortDirection' => 'desc',
+                'sortFieldAllowList' => ['p.nom', 'p.dateCreation', 'p.dateLimite'],
+                'distinct' => true,
+                'wrap-queries' => true,
+            ]
+        );
+
+        $filteredForStats = $projetRepository->findByFilters($nom ?: null, $statut ?: null, $createur, $etiquette);
         $users = $userRepo->findAll();
         $etiquettes = $etiquetteRepo->findAll();
 
-        // Get recent projects for sidebar
         $recentsIds = $session->get(self::SESSION_KEY, []);
         $recents = [];
         foreach ($recentsIds as $id) {
@@ -149,11 +179,11 @@ class ProjetController extends AbstractController
         }
 
         return $this->render('projet/index.html.twig', [
-            'projets' => $projects,
+            'pagination' => $pagination,
             'users' => $users,
             'etiquettes' => $etiquettes,
             'recents' => $recents,
-            'dashboardStats' => $this->buildDashboardStats($projects),
+            'dashboardStats' => $this->buildDashboardStats($filteredForStats),
         ]);
     }
 
@@ -174,11 +204,7 @@ class ProjetController extends AbstractController
 
             $imageFile = $form->get('image')->getData();
             if ($imageFile) {
-                $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', $originalFilename);
-                $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
-                $imageFile->move($this->getParameter('images_directory'), $newFilename);
-                $projet->setImageName($newFilename);
+                $projet->setImageName($this->projetImageUploader->upload($imageFile));
             }
 
             $em->persist($projet);
@@ -200,6 +226,7 @@ class ProjetController extends AbstractController
     {
         if (!$this->isProjetOwnerOrAdmin($projet)) {
             $this->addFlash('error', 'Vous n\'avez pas les droits pour modifier ce projet.');
+
             return $this->redirectToRoute('projet_index');
         }
 
@@ -210,17 +237,9 @@ class ProjetController extends AbstractController
             $imageFile = $form->get('image')->getData();
             if ($imageFile) {
                 if ($projet->getImageName()) {
-                    $oldImagePath = $this->getParameter('images_directory').'/'.$projet->getImageName();
-                    if (file_exists($oldImagePath)) {
-                        unlink($oldImagePath);
-                    }
+                    $this->projetImageUploader->remove($projet->getImageName());
                 }
-
-                $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', $originalFilename);
-                $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
-                $imageFile->move($this->getParameter('images_directory'), $newFilename);
-                $projet->setImageName($newFilename);
+                $projet->setImageName($this->projetImageUploader->upload($imageFile));
             }
 
             $em->flush();
@@ -242,19 +261,18 @@ class ProjetController extends AbstractController
     {
         if (!$this->isCsrfTokenValid('delete'.$projet->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Token CSRF invalide.');
+
             return $this->redirectToRoute('projet_index');
         }
 
         if (!$this->isProjetOwnerOrAdmin($projet)) {
             $this->addFlash('error', 'Vous n\'avez pas les droits pour supprimer ce projet.');
+
             return $this->redirectToRoute('projet_index');
         }
 
         if ($projet->getImageName()) {
-            $imagePath = $this->getParameter('images_directory').'/'.$projet->getImageName();
-            if (file_exists($imagePath)) {
-                unlink($imagePath);
-            }
+            $this->projetImageUploader->remove($projet->getImageName());
         }
 
         $em->remove($projet);

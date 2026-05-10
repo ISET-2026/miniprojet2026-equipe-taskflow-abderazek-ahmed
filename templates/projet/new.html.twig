@@ -44,12 +44,12 @@
                     <p class="mt-2 text-sm text-slate-500">Formats acceptés : JPEG, PNG, WebP (max 2 Mo)</p>
                 </div>
 
-                <div class="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                    <a href="{{ path('projet_index') }}" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                        <i class="bi bi-arrow-left mr-2"></i> Retour
+                <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                    <a href="{{ path('projet_index') }}" class="btn-taskflow-outline order-2 sm:order-1">
+                        <i class="bi bi-arrow-left mr-2" aria-hidden="true"></i>Retour aux projets
                     </a>
-                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600">
-                        <i class="bi bi-check-circle mr-2"></i> Créer le projet
+                    <button type="submit" class="btn-taskflow-primary order-1 sm:order-2 w-full sm:w-auto justify-center">
+                        <i class="bi bi-check-circle mr-2" aria-hidden="true"></i>Créer le projet
                     </button>
                 </div>
             </div>

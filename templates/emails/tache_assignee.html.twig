@@ -1,0 +1,62 @@
+{# templates/emails/tache_assignee.html.twig #}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        h2 { color: #007bff; }
+        .task-info { background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 15px 0; }
+        .info-row { margin: 10px 0; }
+        .label { font-weight: bold; color: #555; }
+        .footer { margin-top: 30px; font-size: 12px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>✅ Nouvelle tâche assignée</h2>
+
+        <p>Bonjour <strong>{{ assignee.pseudo }}</strong>,</p>
+
+        <p>Une nouvelle tâche vous a été assignée par <strong>{{ assigner.pseudo }}</strong>.</p>
+
+        <div class="task-info">
+            <div class="info-row">
+                <span class="label">📌 Tâche :</span> {{ tache.titre }}
+            </div>
+            <div class="info-row">
+                <span class="label">📂 Projet :</span> {{ projet.nom }}
+            </div>
+            <div class="info-row">
+                <span class="label">🎯 Priorité :</span>
+                {% if tache.priorite == 'basse' %}
+                    🔵 Basse
+                {% elseif tache.priorite == 'moyenne' %}
+                    🟢 Moyenne
+                {% elseif tache.priorite == 'haute' %}
+                    🟠 Haute
+                {% elseif tache.priorite == 'urgente' %}
+                    🔴 Urgente
+                {% endif %}
+            </div>
+            {% if tache.dateEcheance %}
+            <div class="info-row">
+                <span class="label">⏰ Date d'échéance :</span> {{ tache.dateEcheance|date('d/m/Y') }}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if tache.description %}
+        <p><strong>Description :</strong></p>
+        <p>{{ tache.description }}</p>
+        {% endif %}
+
+        <p style="margin-top: 30px;">Veuillez consulter la tâche dans TaskFlow pour plus de détails.</p>
+
+        <div class="footer">
+            <p>© 2026 TaskFlow - Gestionnaire de Tâches Collaboratif</p>
+        </div>
+    </div>
+</body>
+</html>

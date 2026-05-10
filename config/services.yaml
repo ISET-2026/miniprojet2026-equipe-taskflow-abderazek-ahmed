@@ -12,6 +12,8 @@ parameters:
     # Aliases used by controllers via getParameter()
     images_directory: '%app.images_directory%'
     uploads_directory: '%app.uploads_directory%'
+    upload_directory_projets: '%kernel.project_dir%/public/uploads/projets'
+    upload_directory_taches: '%kernel.project_dir%/public/uploads/taches'
 
 services:
     # default configuration for services in *this* file
@@ -23,6 +25,17 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+
+    # FileUploader pour les projets
+    App\Service\FileUploader:
+        arguments:
+            $targetDirectory: '%upload_directory_projets%'
+
+    # FileUploader pour les tâches
+    file_uploader_taches:
+        class: App\Service\FileUploader
+        arguments:
+            $targetDirectory: '%upload_directory_taches%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

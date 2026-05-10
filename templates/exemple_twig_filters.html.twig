@@ -1,0 +1,220 @@
+{# Exemple d'utilisation des filtres et fonctions Twig personnalisées #}
+{# Path: templates/exemple_twig_filters.html.twig #}
+
+{% extends "base.html.twig" %}
+
+{% block title %}Exemple - Filtres Twig TaskFlow{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <h1>📊 Exemple d'utilisation des filtres Twig TaskFlow</h1>
+
+    {# ============================================ #}
+    {# SECTION 1: Filtre time_ago               #}
+    {# ============================================ #}
+    
+    <section class="mt-5">
+        <h2>📅 Filtre `time_ago` — Dates relatives</h2>
+        <p>Convertit une date en format relatif (il y a X temps)</p>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tâche</th>
+                    <th>Créée</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tache in projets.taches %}
+                <tr>
+                    <td>
+                        <strong>{{ tache.titre }}</strong>
+                    </td>
+                    <td>
+                        {# Utiliser le filtre time_ago #}
+                        <small class="text-muted">{{ tache.dateCreation|time_ago }}</small>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="alert alert-info">
+            <strong>Résultat :</strong>
+            <ul>
+                <li>il y a 2 minutes</li>
+                <li>il y a 3 heures</li>
+                <li>hier</li>
+                <li>il y a 5 jours</li>
+                <li>il y a 2 semaines</li>
+            </ul>
+        </div>
+    </section>
+
+    {# ============================================ #}
+    {# SECTION 2: Filtre priority_icon          #}
+    {# ============================================ #}
+
+    <section class="mt-5">
+        <h2>🎯 Filtre `priority_icon` — Icônes de priorité</h2>
+        <p>Affiche un emoji selon la priorité de la tâche</p>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tâche</th>
+                    <th>Priorité</th>
+                    <th>Icône</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Corriger bug critique</td>
+                    <td><span class="badge bg-danger">Urgente</span></td>
+                    <td><h4>{{ 'urgente'|priority_icon }}</h4></td>
+                </tr>
+                <tr>
+                    <td>Refactoriser le code</td>
+                    <td><span class="badge bg-warning">Haute</span></td>
+                    <td><h4>{{ 'haute'|priority_icon }}</h4></td>
+                </tr>
+                <tr>
+                    <td>Ajouter des tests</td>
+                    <td><span class="badge bg-info">Moyenne</span></td>
+                    <td><h4>{{ 'moyenne'|priority_icon }}</h4></td>
+                </tr>
+                <tr>
+                    <td>Documentation</td>
+                    <td><span class="badge bg-secondary">Basse</span></td>
+                    <td><h4>{{ 'basse'|priority_icon }}</h4></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="alert alert-info">
+            <strong>Correspondance :</strong>
+            <ul>
+                <li>🔵 Basse</li>
+                <li>🟢 Moyenne</li>
+                <li>🟠 Haute</li>
+                <li>🔴 Urgente</li>
+            </ul>
+        </div>
+    </section>
+
+    {# ============================================ #}
+    {# SECTION 3: Fonction progress_bar          #}
+    {# ============================================ #}
+
+    <section class="mt-5">
+        <h2>📈 Fonction `progress_bar` — Barres de progression</h2>
+        <p>Génère une barre de progression colorée selon le pourcentage</p>
+
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Projet 1 : Système CRM (95% terminé)</h5>
+                {{ progress_bar(95) }}
+                <small class="text-success">✅ Presque terminé !</small>
+            </div>
+            <div class="col-md-6">
+                <h5>Projet 2 : E-commerce (70% terminé)</h5>
+                {{ progress_bar(70) }}
+                <small class="text-info">🔵 Bonne progression</small>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h5>Projet 3 : Mobile App (45% terminé)</h5>
+                {{ progress_bar(45) }}
+                <small class="text-warning">🟡 À accélérer</small>
+            </div>
+            <div class="col-md-6">
+                <h5>Projet 4 : Dashboard (15% terminé)</h5>
+                {{ progress_bar(15) }}
+                <small class="text-danger">🔴 Priorité haute !</small>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <strong>Couleurs dynamiques :</strong>
+            <ul>
+                <li><span class="badge bg-success">Vert</span> : > 75% (excellent)</li>
+                <li><span class="badge bg-info">Bleu</span> : > 50% (bon)</li>
+                <li><span class="badge bg-warning">Jaune</span> : > 25% (à améliorer)</li>
+                <li><span class="badge bg-danger">Rouge</span> : ≤ 25% (urgent)</li>
+            </ul>
+        </div>
+    </section>
+
+    {# ============================================ #}
+    {# SECTION 4: Combinaison des filtres       #}
+    {# ============================================ #}
+
+    <section class="mt-5">
+        <h2>🚀 Combinaison — Utilisation complète</h2>
+        <p>Exemple d'utilisation dans un tableau de tâches</p>
+
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Tâche</th>
+                    <th>Priorité</th>
+                    <th>Créée</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Implémenter l'authentification</strong></td>
+                    <td style="font-size: 1.5em;">{{ 'haute'|priority_icon }}</td>
+                    <td><small>{{ 'now'|date('-3 days')|time_ago }}</small></td>
+                    <td><span class="badge bg-success">Terminée</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Corriger bug de pagination</strong></td>
+                    <td style="font-size: 1.5em;">{{ 'urgente'|priority_icon }}</td>
+                    <td><small>{{ 'now'|date('-1 hour')|time_ago }}</small></td>
+                    <td><span class="badge bg-warning">En cours</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Écrire tests unitaires</strong></td>
+                    <td style="font-size: 1.5em;">{{ 'moyenne'|priority_icon }}</td>
+                    <td><small>{{ 'now'|date('-5 days')|time_ago }}</small></td>
+                    <td><span class="badge bg-primary">À faire</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    {# Afficher la barre de progression pour un projet #}
+    <section class="mt-5">
+        <h2>📊 Progression du Projet</h2>
+        
+        {% if projet is defined and projet.taches is not empty %}
+            {# Supposer qu'il y a un service ProjetStatsCalculator injecté #}
+            <p>Les {{ projet.taches|length }} tâches du projet</p>
+            {# progress_bar(progressPercentage) #}
+        {% else %}
+            <div class="alert alert-secondary">
+                Aucun projet défini pour cet exemple.
+            </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    section {
+        border-left: 4px solid #007bff;
+        padding-left: 20px;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}

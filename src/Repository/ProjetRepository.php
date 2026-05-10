@@ -6,6 +6,7 @@ use App\Entity\Etiquette;
 use App\Entity\Projet;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 class ProjetRepository extends ServiceEntityRepository
@@ -15,14 +16,38 @@ class ProjetRepository extends ServiceEntityRepository
         parent::__construct($registry, Projet::class);
     }
 
+    public function createFilteredListingQueryBuilder(
+        ?string $nom,
+        ?string $statut,
+        ?User $createur = null,
+        ?Etiquette $etiquette = null,
+    ): QueryBuilder {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.createur', 'createur')->addSelect('createur');
+
+        $this->applyFilters($qb, $nom, $statut, $createur, $etiquette);
+
+        return $qb->orderBy('p.dateCreation', 'DESC');
+    }
+
     public function findByFilters(
         ?string $nom,
         ?string $statut,
         ?User $createur = null,
         ?Etiquette $etiquette = null
     ): array {
-        $qb = $this->createQueryBuilder('p');
+        return $this->createFilteredListingQueryBuilder($nom, $statut, $createur, $etiquette)
+            ->getQuery()
+            ->getResult();
+    }
 
+    private function applyFilters(
+        QueryBuilder $qb,
+        ?string $nom,
+        ?string $statut,
+        ?User $createur,
+        ?Etiquette $etiquette,
+    ): void {
         if ($nom) {
             $qb->andWhere('LOWER(p.nom) LIKE LOWER(:nom)')
                 ->setParameter('nom', '%' . $nom . '%');
@@ -39,16 +64,12 @@ class ProjetRepository extends ServiceEntityRepository
         }
 
         if ($etiquette) {
-            $qb->innerJoin('p.taches', 't')
-               ->innerJoin('t.etiquettes', 'e')
-               ->andWhere('e = :etiquette')
-               ->setParameter('etiquette', $etiquette)
-               ->groupBy('p.id'); // Avoid duplicates
+            $qb->distinct()
+                ->innerJoin('p.taches', 't_filtre')
+                ->innerJoin('t_filtre.etiquettes', 'e_filtre')
+                ->andWhere('e_filtre = :etiquette')
+                ->setParameter('etiquette', $etiquette);
         }
-
-        return $qb->orderBy('p.dateCreation', 'DESC')
-                  ->getQuery()
-                  ->getResult();
     }
 
     public function findMostRecentProjects(int $limit = 5): array

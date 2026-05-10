@@ -8,6 +8,7 @@
         <div class="mb-6">
             <h2 class="text-3xl font-bold text-slate-900 mb-2"><i class="bi bi-pencil-square text-blue-600 mr-2"></i> Modifier la tâche</h2>
             <p class="text-slate-500">Mettez à jour les détails de cette tâche et ajustez son assignation si besoin.</p>
+            <p class="mt-2 text-sm text-slate-600">Créée {{ tache.dateCreation|time_ago }} — priorité actuelle : {{ tache.priorite|priority_icon }}</p>
         </div>
 
         {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
@@ -71,12 +72,12 @@
                     <p class="mt-2 text-sm text-slate-500">Laissez vide pour conserver le fichier existant.</p>
                 </div>
 
-                <div class="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                    <a href="{{ path('projet_show', {id: tache.projet.id}) }}" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                        <i class="bi bi-arrow-left mr-2"></i> Annuler
+                <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                    <a href="{{ path('projet_show', {id: tache.projet.id}) }}" class="btn-taskflow-outline order-2 sm:order-1">
+                        <i class="bi bi-arrow-left mr-2" aria-hidden="true"></i>Annuler
                     </a>
-                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-amber-600">
-                        <i class="bi bi-save mr-2"></i> Enregistrer
+                    <button type="submit" class="btn-taskflow-primary order-1 sm:order-2 w-full sm:w-auto justify-center">
+                        <i class="bi bi-save mr-2" aria-hidden="true"></i>Enregistrer les modifications
                     </button>
                 </div>
             </div>

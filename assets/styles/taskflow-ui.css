@@ -1,107 +1,63 @@
-/* --- Pagination (liste projets, tâches d’un projet) --- */
+/* --- Pagination (liste projets, tâches) : barre + Bootstrap .pagination --- */
 .taskflow-pagination-bar {
-    display: flex;
+    display: flex !important;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 1rem 1.25rem;
     margin-top: 1.25rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
 }
 
 .taskflow-pagination-bar__meta {
     font-size: 0.875rem;
-    color: #475569;
-    font-weight: 600;
+    color: #334155;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
 }
 
-.taskflow-pagination__list {
-    display: flex;
+/* Forcer le flex horizontal même si un reset (ex. Tailwind) casse .pagination */
+.taskflow-pagination .pagination {
+    display: flex !important;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
+    padding-left: 0;
+    margin-bottom: 0;
     list-style: none;
-    margin: 0;
-    padding: 0;
+    gap: 0.35rem;
 }
 
-.taskflow-pagination__item {
-    margin: 0;
-    padding: 0;
-}
-
-/* Précédent / Suivant : mis en avant */
-.taskflow-pagination__step {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    min-height: 2.5rem;
-    padding: 0.45rem 1rem;
-    border-radius: 999px;
-    font-size: 0.875rem;
-    font-weight: 700;
-    text-decoration: none;
-    border: 2px solid #0f172a;
-    background: #fff;
-    color: #0f172a;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-}
-
-a.taskflow-pagination__step:hover {
-    background: #0f172a;
-    color: #fff;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
-}
-
-.taskflow-pagination__step.is-disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    border-color: #cbd5e1;
-    color: #94a3b8;
-    background: #f8fafc;
-    box-shadow: none;
-}
-
-/* Numéros de page */
-.taskflow-pagination__num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 2.25rem;
-    height: 2.25rem;
-    padding: 0 0.5rem;
+.taskflow-pagination .page-link {
     border-radius: 0.5rem;
-    font-size: 0.82rem;
-    font-weight: 600;
-    text-decoration: none;
     color: #334155;
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    border-color: #e2e8f0;
+    padding: 0.4rem 0.75rem;
+    font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-a.taskflow-pagination__num:hover {
-    border-color: #2563eb;
-    color: #1d4ed8;
+.taskflow-pagination .page-item:not(.disabled):not(.active) .page-link:hover {
     background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
 }
 
-.taskflow-pagination__num.is-current {
-    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    color: #fff !important;
+.taskflow-pagination .page-item.active .page-link {
+    background: #0f172a;
     border-color: #0f172a;
-    cursor: default;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
 }
 
-.taskflow-pagination__ellipsis {
-    display: inline-flex;
-    align-items: center;
-    padding: 0 0.35rem;
-    color: #94a3b8;
-    font-weight: 700;
+.taskflow-pagination .page-item.disabled .page-link {
+    opacity: 0.55;
+    pointer-events: none;
 }
 
 /* --- Étiquettes : boutons lisibles sur fond clair --- */

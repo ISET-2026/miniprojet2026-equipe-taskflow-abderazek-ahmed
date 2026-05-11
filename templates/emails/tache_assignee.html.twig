@@ -40,11 +40,10 @@
                     🔴 Urgente
                 {% endif %}
             </div>
-            {% if tache.dateEcheance %}
             <div class="info-row">
-                <span class="label">⏰ Date d'échéance :</span> {{ tache.dateEcheance|date('d/m/Y') }}
+                <span class="label">⏰ Date d'échéance :</span>
+                {% if tache.dateEcheance %}{{ tache.dateEcheance|date('d/m/Y') }}{% else %}<em>Non renseignée</em>{% endif %}
             </div>
-            {% endif %}
         </div>
 
         {% if tache.description %}

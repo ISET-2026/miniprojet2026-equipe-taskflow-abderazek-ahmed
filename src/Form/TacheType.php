@@ -44,15 +44,6 @@ class TacheType extends AbstractType
                     'Urgente' => 'urgente',
                 ],
             ])
-            ->add('statut', ChoiceType::class, [
-                'label' => 'Statut',
-                'choices' => [
-                    'À faire' => 'a_faire',
-                    'En cours' => 'en_cours',
-                    'Terminée' => 'terminee',
-                ],
-                'attr' => ['class' => 'form-select'],
-            ])
             ->add('dateEcheance', DateType::class, [
                 'label' => 'Date d\'échéance',
                 'widget' => 'single_text',
@@ -89,9 +80,11 @@ class TacheType extends AbstractType
                             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                             'image/jpeg',
                             'image/png',
+                            'image/webp',
+                            'image/gif',
                             'text/plain',
                         ],
-                        mimeTypesMessage: 'Veuillez uploader un fichier valide (PDF, DOC, DOCX, images, texte)'
+                        mimeTypesMessage: 'Veuillez uploader un fichier valide (PDF, DOC, DOCX, images JPEG/PNG/WebP/GIF, texte)'
                     ),
                 ],
             ]);

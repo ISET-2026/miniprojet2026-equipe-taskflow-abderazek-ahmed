@@ -2,8 +2,10 @@
 
 namespace App\Repository;
 
+use App\Entity\Projet;
 use App\Entity\Tache;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 class TacheRepository extends ServiceEntityRepository
@@ -13,5 +15,11 @@ class TacheRepository extends ServiceEntityRepository
         parent::__construct($registry, Tache::class);
     }
 
-    // Additional custom methods can be added here if needed
+    public function createListingQueryBuilderForProjet(Projet $projet): QueryBuilder
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.projet = :projet')
+            ->setParameter('projet', $projet)
+            ->orderBy('t.dateCreation', 'DESC');
+    }
 }

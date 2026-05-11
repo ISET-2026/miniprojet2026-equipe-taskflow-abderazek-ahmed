@@ -27,10 +27,6 @@
         .status-chip { display: inline-flex; border-radius: 999px; background: #e2e8f0; color: #1e293b; font-size: .73rem; font-weight: 700; padding: .2rem .55rem; text-transform: uppercase; }
         .project-description { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid #e2e8f0; color: #334155; font-size: .9rem; }
 
-        .progress-title { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; color: #0f172a; }
-        .progress-track { height: 10px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%); }
-        .progress-text { margin-top: .5rem; font-size: .82rem; color: #334155; font-weight: 600; }
         .kpi-grid { margin-top: .7rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; }
         .kpi { border: 1px solid #e2e8f0; border-radius: .6rem; background: #f8fafc; padding: .65rem; }
         .kpi-label { font-size: .72rem; color: #64748b; font-weight: 700; }
@@ -119,7 +115,8 @@
                         <div>
                             <h2 style="font-size:1.15rem;font-weight:800;color:#0f172a;">{{ projet.nom }}</h2>
                             <div style="margin-top:.45rem;">
-                                <span class="status-chip">{{ projet.statut|replace({'_':' '}) }}</span>
+                                {% set statutEmoji = projet.statut == 'planifie' ? '🔵' : projet.statut == 'en_cours' ? '🟡' : projet.statut == 'termine' ? '🟢' : '🔴' %}
+                                <span class="status-chip">{{ statutEmoji }} {{ projet.statut|replace({'_':' '})|title }}</span>
                             </div>
                             <div class="project-meta" style="margin-top:.55rem;">
                                 <div><i class="bi bi-person"></i> Créé par <strong>{{ projet.createur.pseudo }}</strong></div>
@@ -132,10 +129,6 @@
                     <div class="project-description">{{ projet.description|nl2br }}</div>
 
                     {% if stats is defined %}
-                        <div class="progress-title">Progression du projet</div>
-                        {{ progress_bar(stats.progressPercentage)|raw }}
-                        <div class="progress-text">{{ stats.progressPercentage }}% des tâches terminées</div>
-
                         <div class="kpi-grid">
                             <div class="kpi">
                                 <div class="kpi-label">À faire</div>
@@ -173,10 +166,11 @@
                             <table class="task-table">
                                 <thead>
                                     <tr>
-                                        <th>Titre</th>
-                                        <th>Priorité</th>
-                                        <th>Créée</th>
-                                        <th>Statut</th>
+                                        <th>{{ knp_pagination_sortable(paginationTaches, 'Titre', 't.titre') }}</th>
+                                        <th>{{ knp_pagination_sortable(paginationTaches, 'Priorité', 't.priorite') }}</th>
+                                        <th>{{ knp_pagination_sortable(paginationTaches, 'Créée', 't.dateCreation') }}</th>
+                                        <th>{{ knp_pagination_sortable(paginationTaches, 'Échéance', 't.dateEcheance') }}</th>
+                                        <th>{{ knp_pagination_sortable(paginationTaches, 'Statut', 't.statut') }}</th>
                                         <th>Assigné à</th>
                                         <th>Pièce jointe</th>
                                         <th>Étiquettes</th>
@@ -193,6 +187,7 @@
                                             <span class="mini-chip {{ priorityClass }}" title="{{ tache.priorite }}">{{ tache.priorite|priority_icon }} {{ tache.priorite|replace({'_':' '})|title }}</span>
                                         </td>
                                         <td class="text-muted" style="font-size:.8rem;">{{ tache.dateCreation|time_ago }}</td>
+                                        <td class="text-muted" style="font-size:.8rem;">{% if tache.dateEcheance %}{{ tache.dateEcheance|date('d/m/Y') }}{% else %}—{% endif %}</td>
                                         <td>
                                             {% if peut_gerer_tache %}
                                                 <form method="post" action="{{ path('tache_statut', {id: tache.id}) }}">

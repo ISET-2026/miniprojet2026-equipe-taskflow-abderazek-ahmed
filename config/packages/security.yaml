@@ -54,8 +54,8 @@ security:
         - { path: '^/projets/\d+/modifier$', roles: ROLE_USER }
         - { path: '^/projets/\d+/supprimer$', roles: ROLE_USER }
 
-        # Créer / assigner une tâche — ROLE_USER + ROLE_CHEF_PROJET (= chef de projet, via hiérarchie)
-        - { path: '^/projets/\d+/taches/', roles: [ROLE_USER, ROLE_CHEF_PROJET] }
+        # Créer / assigner une tâche — ROLE_USER (inclut les chefs via la hiérarchie)
+        - { path: '^/projets/\d+/taches/', roles: ROLE_USER }
 
         # Modifier / supprimer / statut d’une tâche — ROLE_USER
         - { path: '^/taches/', roles: ROLE_USER }

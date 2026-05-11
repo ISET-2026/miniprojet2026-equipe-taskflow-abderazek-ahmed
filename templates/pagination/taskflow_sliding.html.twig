@@ -1,67 +1,73 @@
-{# Pagination KNP sans dépendance au CSS Bootstrap (compatible AssetMapper / Tailone) #}
+{# KnpPaginator — Bootstrap 5 (cohérent avec base.html.twig, résiste aux resets Tailwind / Tailone) #}
 {% if pageCount > 1 %}
-    <nav class="taskflow-pagination" aria-label="Pagination">
-        <ul class="taskflow-pagination__list">
+    <nav class="taskflow-pagination" aria-label="Pagination des pages">
+        <ul class="pagination pagination-sm mb-0 flex-wrap justify-content-center gap-1">
 
             {% if previous is defined %}
-                <li class="taskflow-pagination__item">
-                    <a class="taskflow-pagination__step taskflow-pagination__step--prev" rel="prev" href="{{ path(route, knp_pagination_query(query, previous, options)) }}">
+                <li class="page-item">
+                    <a class="page-link rounded-pill px-3 d-inline-flex align-items-center gap-1" rel="prev" href="{{ path(route, knp_pagination_query(query, previous, options)) }}">
                         <i class="bi bi-chevron-left" aria-hidden="true"></i><span>Précédent</span>
                     </a>
                 </li>
             {% else %}
-                <li class="taskflow-pagination__item">
-                    <span class="taskflow-pagination__step taskflow-pagination__step--prev is-disabled"><i class="bi bi-chevron-left" aria-hidden="true"></i><span>Précédent</span></span>
+                <li class="page-item disabled">
+                    <span class="page-link rounded-pill px-3 d-inline-flex align-items-center gap-1 border-0 bg-transparent text-secondary user-select-none">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i><span>Précédent</span>
+                    </span>
                 </li>
             {% endif %}
 
             {% if startPage > 1 %}
-                <li class="taskflow-pagination__item">
-                    <a class="taskflow-pagination__num" href="{{ path(route, knp_pagination_query(query, 1, options)) }}">1</a>
+                <li class="page-item">
+                    <a class="page-link rounded-3" href="{{ path(route, knp_pagination_query(query, 1, options)) }}">1</a>
                 </li>
                 {% if startPage == 3 %}
-                    <li class="taskflow-pagination__item">
-                        <a class="taskflow-pagination__num" href="{{ path(route, knp_pagination_query(query, 2, options)) }}">2</a>
+                    <li class="page-item">
+                        <a class="page-link rounded-3" href="{{ path(route, knp_pagination_query(query, 2, options)) }}">2</a>
                     </li>
                 {% elseif startPage != 2 %}
-                    <li class="taskflow-pagination__item"><span class="taskflow-pagination__ellipsis">&hellip;</span></li>
+                    <li class="page-item disabled"><span class="page-link border-0 bg-transparent">&hellip;</span></li>
                 {% endif %}
             {% endif %}
 
             {% for page in pagesInRange %}
                 {% if page != current %}
-                    <li class="taskflow-pagination__item">
-                        <a class="taskflow-pagination__num" href="{{ path(route, knp_pagination_query(query, page, options)) }}">{{ page }}</a>
+                    <li class="page-item">
+                        <a class="page-link rounded-3 fw-semibold" href="{{ path(route, knp_pagination_query(query, page, options)) }}">{{ page }}</a>
                     </li>
                 {% else %}
-                    <li class="taskflow-pagination__item"><span class="taskflow-pagination__num is-current" aria-current="page">{{ page }}</span></li>
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link rounded-3 fw-bold">{{ page }}</span>
+                    </li>
                 {% endif %}
             {% endfor %}
 
             {% if pageCount > endPage %}
                 {% if pageCount > (endPage + 1) %}
                     {% if pageCount > (endPage + 2) %}
-                        <li class="taskflow-pagination__item"><span class="taskflow-pagination__ellipsis">&hellip;</span></li>
+                        <li class="page-item disabled"><span class="page-link border-0 bg-transparent">&hellip;</span></li>
                     {% else %}
-                        <li class="taskflow-pagination__item">
-                            <a class="taskflow-pagination__num" href="{{ path(route, knp_pagination_query(query, pageCount - 1, options)) }}">{{ pageCount - 1 }}</a>
+                        <li class="page-item">
+                            <a class="page-link rounded-3" href="{{ path(route, knp_pagination_query(query, pageCount - 1, options)) }}">{{ pageCount - 1 }}</a>
                         </li>
                     {% endif %}
                 {% endif %}
-                <li class="taskflow-pagination__item">
-                    <a class="taskflow-pagination__num" href="{{ path(route, knp_pagination_query(query, pageCount, options)) }}">{{ pageCount }}</a>
+                <li class="page-item">
+                    <a class="page-link rounded-3" href="{{ path(route, knp_pagination_query(query, pageCount, options)) }}">{{ pageCount }}</a>
                 </li>
             {% endif %}
 
             {% if next is defined %}
-                <li class="taskflow-pagination__item">
-                    <a class="taskflow-pagination__step taskflow-pagination__step--next" rel="next" href="{{ path(route, knp_pagination_query(query, next, options)) }}">
+                <li class="page-item">
+                    <a class="page-link rounded-pill px-3 d-inline-flex align-items-center gap-1" rel="next" href="{{ path(route, knp_pagination_query(query, next, options)) }}">
                         <span>Suivant</span><i class="bi bi-chevron-right" aria-hidden="true"></i>
                     </a>
                 </li>
             {% else %}
-                <li class="taskflow-pagination__item">
-                    <span class="taskflow-pagination__step taskflow-pagination__step--next is-disabled"><span>Suivant</span><i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+                <li class="page-item disabled">
+                    <span class="page-link rounded-pill px-3 d-inline-flex align-items-center gap-1 border-0 bg-transparent text-secondary user-select-none">
+                        <span>Suivant</span><i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </span>
                 </li>
             {% endif %}
         </ul>

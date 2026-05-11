@@ -292,7 +292,7 @@
                         <td class="px-4 py-4 align-middle">
                             {% set statutClass = projet.statut == 'planifie' ? 'status-planifie' : projet.statut == 'en_cours' ? 'status-en-cours' : projet.statut == 'termine' ? 'status-termine' : 'status-annule' %}
                             <span class="status-pill {{ statutClass }}">
-                                {% if projet.statut == 'planifie' %}Planifié{% elseif projet.statut == 'en_cours' %}En cours{% elseif projet.statut == 'termine' %}Terminé{% elseif projet.statut == 'annule' %}Annulé{% endif %}
+                                {% if projet.statut == 'planifie' %}🔵 Planifié{% elseif projet.statut == 'en_cours' %}🟡 En cours{% elseif projet.statut == 'termine' %}🟢 Terminé{% elseif projet.statut == 'annule' %}🔴 Annulé{% endif %}
                             </span>
                         </td>
                         <td class="px-4 py-4 align-middle">
@@ -343,7 +343,7 @@
 
     {% if recents is defined and recents|length > 0 %}
         <section class="recents-card">
-            <h2 class="text-lg font-semibold text-slate-900 mb-4"><i class="bi bi-clock-history text-blue-600 mr-2"></i> Derniers projets consultés</h2>
+            <h2 class="text-lg font-semibold text-slate-900 mb-4">📋 Derniers projets consultés</h2>
             <div class="recents-grid">
                 {% for projet in recents %}
                     <a href="{{ path('projet_show', {id: projet.id}) }}" class="recent-item transition">

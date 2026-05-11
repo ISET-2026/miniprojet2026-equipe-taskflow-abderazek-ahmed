@@ -15,11 +15,13 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Psr\Log\LoggerInterface;
 
 class TacheController extends AbstractController
 {
     public function __construct(
         private readonly FileUploader $tachePieceUploader,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -39,8 +41,12 @@ class TacheController extends AbstractController
 
         try {
             $mailer->send($email);
-        } catch (\Throwable) {
-            // Ne pas bloquer si le transport mail n'est pas configuré (ex. dev).
+        } catch (\Throwable $e) {
+            // Ne pas bloquer la requête ; consigner l’erreur (SMTP, DSN, etc.)
+            $this->logger->warning('Envoi mail d\'assignation échoué : '.$e->getMessage(), [
+                'exception' => $e,
+                'to' => $assignee->getEmail(),
+            ]);
         }
     }
 

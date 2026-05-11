@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Form\ProjetType;
 use App\Repository\EtiquetteRepository;
 use App\Repository\ProjetRepository;
+use App\Repository\TacheRepository;
 use App\Repository\UserRepository;
 use App\Service\FileUploader;
 use App\Service\ProjetStatsCalculator;
@@ -93,6 +94,7 @@ class ProjetController extends AbstractController
         Request $request,
         RequestStack $requestStack,
         ProjetRepository $projetRepository,
+        TacheRepository $tacheRepository,
         UserRepository $userRepo,
         EtiquetteRepository $etiquetteRepo,
         PaginatorInterface $paginator,
@@ -124,12 +126,16 @@ class ProjetController extends AbstractController
                 }
             }
 
+            $qbTaches = $tacheRepository->createListingQueryBuilderForProjet($projet);
             $paginationTaches = $paginator->paginate(
-                $projet->getTaches()->toArray(),
+                $qbTaches,
                 $request->query->getInt('page_taches', 1),
                 10,
                 [
                     'pageParameterName' => 'page_taches',
+                    'defaultSortFieldName' => 't.dateCreation',
+                    'defaultSortDirection' => 'desc',
+                    'sortFieldAllowList' => ['t.titre', 't.priorite', 't.dateCreation', 't.dateEcheance', 't.statut'],
                     'wrap-queries' => true,
                 ]
             );

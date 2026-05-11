@@ -2,6 +2,9 @@
 
 Application de gestion de projets et de tâches : CRUD Twig, sécurité, API Platform (JSON-LD), pagination, filtres Doctrine, uploads, mails, CLI et tests PHPUnit.
 
+**Alignement barème « Mini-Projet 2 — TaskFlow »** : entités / relations / validations, CRUD (routes du sujet), formulaires (Bootstrap 5 + contraintes fichiers), sécurité (`ROLE_*`, propriété des projets, `#[IsGranted]`), API Platform + groupes, `ProjetStatsCalculator`, session (5 derniers projets, FIFO sans doublons), recherche `ProjetRepository::findByFilters` (+ filtre par étiquette), importmap + SweetAlert2, mail d’assignation + `TaskFlowSubscriber`, `FileUploader`, fixtures + KnpPaginator (6 / page projets, 10 / page tâches, tri), extension Twig `TaskFlowExtension`, commande `app:taskflow:report`, tests PHPUnit.  
+*Le sujet mentionne Symfony 7.4 ; ce dépôt cible Symfony 8.0 (API Platform 4, attributs `Symfony\Component\Serializer\Attribute\Groups`).*
+
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/9ydLnpF1)
 
 ## Prérequis
@@ -76,7 +79,7 @@ erDiagram
 - JSON-LD : `GET /api/projets` (accept `application/ld+json`)
 - Swagger / Hydra : `/api`
 - Les attributs de sérialisation utilisent `Symfony\Component\Serializer\Attribute\Groups` (obligatoire en Symfony 8 pour que les groupes `projet:read` / `projet:write` s’appliquent).
-- **POST** `/api/projets` : envoyez `Content-Type: application/ld+json` avec notamment `"createur": "http(s)://…/api/users/{id}"` (IRI complète ou base de votre environnement).
+- **POST** `/api/projets` : authentifiez un utilisateur (ex. chef de projet) puis envoyez `Content-Type: application/ld+json` avec `nom`, `description`, `dateLimite`, `statut`, etc. Le **créateur** n’est pas dans `projet:write` : il est renseigné automatiquement à partir de l’utilisateur connecté (`ProjetCreateurDoctrineListener`).
 
 ## Commande rapport
 

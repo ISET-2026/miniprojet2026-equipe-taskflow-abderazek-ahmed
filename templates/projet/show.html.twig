@@ -24,7 +24,11 @@
         .project-main { display: grid; grid-template-columns: 220px 1fr; gap: 1rem; }
         .project-image { width: 100%; height: 170px; object-fit: cover; border-radius: .6rem; background: #f1f5f9; }
         .project-meta { display: flex; flex-direction: column; gap: .35rem; color: #475569; font-size: .88rem; }
-        .status-chip { display: inline-flex; border-radius: 999px; background: #e2e8f0; color: #1e293b; font-size: .73rem; font-weight: 700; padding: .2rem .55rem; text-transform: uppercase; }
+        .status-chip { display: inline-flex; border-radius: 999px; font-size: .73rem; font-weight: 700; padding: .2rem .55rem; text-transform: uppercase; }
+        .status-planifie { background: #3b82f6; color: #fff; }
+        .status-en-cours { background: #facc15; color: #1f2937; }
+        .status-termine { background: #22c55e; color: #fff; }
+        .status-annule { background: #ef4444; color: #fff; }
         .project-description { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid #e2e8f0; color: #334155; font-size: .9rem; }
 
         .kpi-grid { margin-top: .7rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; }
@@ -115,8 +119,9 @@
                         <div>
                             <h2 style="font-size:1.15rem;font-weight:800;color:#0f172a;">{{ projet.nom }}</h2>
                             <div style="margin-top:.45rem;">
+                                {% set statutClass = projet.statut == 'planifie' ? 'status-planifie' : projet.statut == 'en_cours' ? 'status-en-cours' : projet.statut == 'termine' ? 'status-termine' : 'status-annule' %}
                                 {% set statutEmoji = projet.statut == 'planifie' ? '🔵' : projet.statut == 'en_cours' ? '🟡' : projet.statut == 'termine' ? '🟢' : '🔴' %}
-                                <span class="status-chip">{{ statutEmoji }} {{ projet.statut|replace({'_':' '})|title }}</span>
+                                <span class="status-chip {{ statutClass }}">{{ statutEmoji }} {{ projet.statut|replace({'_':' '})|title }}</span>
                             </div>
                             <div class="project-meta" style="margin-top:.55rem;">
                                 <div><i class="bi bi-person"></i> Créé par <strong>{{ projet.createur.pseudo }}</strong></div>
